@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 10
+    volumes:
+      - pgtestdata:/var/lib/postgresql/data
+
+  auth-service:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/testdb
+      JWT_SECRET: testsecret
+      JWT_ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      SQLALCHEMY_ECHO: "false"
+    depends_on:
+      - postgres
+    ports:
+      - "8001:8000"
+
+  schedule-service:
+    build:
+      context: ./services/schedule
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/testdb
+      JWT_SECRET: testsecret
+      JWT_ALGORITHM: HS256
+      SQLALCHEMY_ECHO: "false"
+    depends_on:
+      - postgres
+    ports:
+      - "8002:8000"
+
+  booking-service:
+    build:
+      context: ./services/booking
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/testdb
+      JWT_SECRET: testsecret
+      JWT_ALGORITHM: HS256
+      SQLALCHEMY_ECHO: "false"
+      SCHEDULE_SERVICE_URL: "http://schedule-service:8000"
+    depends_on:
+      - postgres
+      - auth-service
+    ports:
+      - "8003:8000"
+
+volumes:
+  pgtestdata:

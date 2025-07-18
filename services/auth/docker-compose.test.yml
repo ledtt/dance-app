@@ -1,0 +1,32 @@
+services:
+  test-db:
+    image: postgres:15
+    container_name: test-db-auth
+    environment:
+      POSTGRES_DB: auth
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    networks:
+      - testnet
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auth-service:
+    build:
+      context: .
+    container_name: test-auth
+    command: ["pytest", "-v", "/app/tests"]
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - testnet
+
+networks:
+  testnet:
+    driver: bridge
