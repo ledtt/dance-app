@@ -2,13 +2,14 @@
 
 import uuid
 import datetime
+from types import SimpleNamespace
+
 import pytest
 from httpx import AsyncClient, ASGITransport
-from types import SimpleNamespace
 
 from src.main import app
 from src.db import init_db
-import src.crud as crud
+from src import crud
 from src.auth import get_current_user_id
 
 

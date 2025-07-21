@@ -1,15 +1,17 @@
 # services/schedule/main.py
+from uuid import UUID
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from contextlib import asynccontextmanager
+
 from .db import get_db, init_db
 from .schemas import ClassCreate, ClassOut
 from .crud import get_schedule, get_classes_by_filter, create_class, get_class_by_id
-from uuid import UUID
+
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     await init_db()
     yield
 

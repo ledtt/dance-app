@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from .config import settings
 from .models import Base
 
-DATABASE_URL = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
+DATABASE_URL = str(settings.database_url).replace("postgresql://", "postgresql+asyncpg://")
 
 engine = create_async_engine(
     DATABASE_URL,

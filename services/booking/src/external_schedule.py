@@ -1,7 +1,7 @@
 # services/booking/external_schedule.py
 
-import httpx
 import os
+import httpx
 
 BASE_URL = os.getenv("SCHEDULE_SERVICE_URL", "http://schedule-service:8000") # можно взять из env
 print("SCHEDULE_SERVICE_URL =", BASE_URL)

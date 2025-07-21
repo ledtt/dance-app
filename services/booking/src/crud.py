@@ -1,10 +1,11 @@
 # services/booking/crud.py
 
 import datetime
+from collections.abc import Sequence
 from uuid import UUID
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from collections.abc import Sequence
+
 
 from .models import Booking
 from .schemas import BookingCreate
