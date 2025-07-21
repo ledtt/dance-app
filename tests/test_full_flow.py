@@ -1,30 +1,28 @@
+from datetime import date
+from uuid import uuid4
 import pytest
 import httpx
-import asyncio
-from datetime import date, timedelta
-from uuid import uuid4
 
 AUTH_URL = "http://localhost:8001"
 SCHEDULE_URL = "http://localhost:8002"
 BOOKING_URL = "http://localhost:8003"
 
-email = f"user_{uuid4().hex[:6]}@example.com"
+test_email = f"user_{uuid4().hex[:6]}@example.com"
 
 @pytest.mark.asyncio
 async def test_full_flow():
     async with httpx.AsyncClient() as client:
         # 1. Регистрация пользователя
         r = await client.post(f"{AUTH_URL}/register", json={
-            "email": email,
+            "email": test_email,
             "name": "Test User",
             "password": "Pass1234"
         })
         assert r.status_code == 201
-        user_id = r.json()["id"]
 
         # 2. Получение токена
         r = await client.post(f"{AUTH_URL}/login", data={
-            "username": email,
+            "username": test_email,
             "password": "Pass1234"
         })
         assert r.status_code == 200

@@ -79,16 +79,16 @@ async def get_current_user(
         if not user_id or not isinstance(user_id, str):
             logger.warning("JWT payload missing or invalid 'sub': %s", payload)
             raise credentials_exception
-    except ExpiredSignatureError:
+    except ExpiredSignatureError as exc:
         logger.info("JWT token has expired")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token has expired",
             headers=auth_header,
-        )
+        ) from exc
     except JWTError as err:
         logger.warning("JWT decode failed: %s", err)
-        raise credentials_exception
+        raise credentials_exception from err
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -97,3 +97,4 @@ async def get_current_user(
         raise credentials_exception
 
     return user
+    

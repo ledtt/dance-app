@@ -1,11 +1,11 @@
 # tests/conftest.py
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
 from src.db import engine
 from src.models import Base
-from sqlalchemy.ext.asyncio import async_sessionmaker
-
 
 @pytest.fixture(scope="function", autouse=True)
 async def reset_db():
@@ -18,6 +18,6 @@ async def reset_db():
 
 @pytest.fixture()
 async def async_session():
-    async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
-    async with async_session() as session:
+    session_factory = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+    async with session_factory() as session:
         yield session

@@ -2,9 +2,10 @@
 
 import uuid
 import datetime
+from types import SimpleNamespace
+
 import pytest
 from httpx import AsyncClient, ASGITransport
-from types import SimpleNamespace
 
 from src.main import app
 from src.db import init_db

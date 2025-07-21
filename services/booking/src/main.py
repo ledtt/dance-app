@@ -1,11 +1,12 @@
 # services/booking/main.py
 
+from uuid import UUID
+import logging
+
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from uuid import UUID
-from contextlib import asynccontextmanager
-import logging
 
 from .db import get_db, init_db
 from .schemas import BookingCreate, BookingOut
@@ -19,7 +20,7 @@ from .crud import (
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     await init_db()
     yield
 
@@ -41,7 +42,7 @@ async def book_class(
         return booking
     except ValueError as e:
         logger.warning("Ошибка записи: %s", str(e))
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @app.get("/my-bookings", response_model=list[BookingOut])

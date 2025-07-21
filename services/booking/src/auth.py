@@ -2,9 +2,11 @@
 
 import logging
 from typing import Annotated
-from fastapi import Depends, HTTPException, status
+
+from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError, ExpiredSignatureError
+
 from .config import settings
 
 logger = logging.getLogger(__name__)
@@ -19,8 +21,8 @@ def get_current_user_id(
         if not user_id:
             raise ValueError("Missing sub in token")
         return user_id
-    except ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
+    except ExpiredSignatureError as exc:
+        raise HTTPException(status_code=401, detail="Token expired") from exc
     except JWTError as e:
         logger.warning("JWT decode failed: %s", e)
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise HTTPException(status_code=401, detail="Invalid token") from e

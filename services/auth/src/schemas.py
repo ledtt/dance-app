@@ -3,15 +3,7 @@
 from typing import Literal
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
-
-from pydantic import (
-    BaseModel,
-    EmailStr,
-    Field,
-    SecretStr,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr, model_validator
 
 
 class UserCreate(BaseModel):
@@ -31,7 +23,7 @@ class UserCreate(BaseModel):
     )
 
     @model_validator(mode="before")
-    def check_password_complexity(cls, values):
+    def check_password_complexity(self, values):
         pwd = values.get("password")
         raw = pwd.get_secret_value() if isinstance(pwd, SecretStr) else pwd
         if not any(c.isalpha() for c in raw) or not any(c.isdigit() for c in raw):

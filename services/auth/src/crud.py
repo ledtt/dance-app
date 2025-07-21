@@ -35,15 +35,14 @@ async def create_user(db: AsyncSession, user_create: UserCreate) -> User:
         await db.commit()
         await db.refresh(new_user)
         logger.info("User created: %s (id=%s)", new_user.email, new_user.id)
-    except IntegrityError:
+    except IntegrityError as exc:
         await db.rollback()
         logger.warning("Registration failed, email exists: %s", user_create.email)
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User with this email already exists"
-        )
+        ) from exc
     return new_user
-
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
