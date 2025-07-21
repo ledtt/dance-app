@@ -3,7 +3,7 @@
 import uuid
 import datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, func
+from sqlalchemy import Date, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 

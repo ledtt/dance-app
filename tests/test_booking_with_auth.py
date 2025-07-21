@@ -1,8 +1,7 @@
+import asyncio
+
 import pytest
 import httpx
-import asyncio
-import time
-from datetime import date
 
 AUTH_URL = "http://localhost:8001"
 BOOKING_URL = "http://localhost:8003"

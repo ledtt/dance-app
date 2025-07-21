@@ -1,0 +1,28 @@
+[MASTER]
+ignore=venv
+init-hook='import sys; sys.path.append("services")'
+
+[MESSAGES CONTROL]
+disable=
+    C0114,  # missing-module-docstring
+    C0115,  # missing-class-docstring
+    C0116,  # missing-function-docstring
+    C0103,  # invalid-name (например, test_email)
+    R0903,  # too-few-public-methods
+    R0801,  # duplicate-code
+    C0303,  # trailing-whitespace
+    C0304,  # missing-final-newline
+    C0305,  # trailing-newlines
+    C0411,  # wrong-import-order
+    W0611,  # unused-import
+    W0612,  # unused-variable
+    W0621,  # redefined-outer-name
+    W0613,  # unused-argument
+    W0707,  # raise-missing-from
+    E1101,  # no-member (например, FieldInfo.replace)
+    E1102,  # not-callable (например, func.now)
+    E0402,  # relative-beyond-top-level
+    E0611,  # no-name-in-module
+
+[FORMAT]
+max-line-length=100

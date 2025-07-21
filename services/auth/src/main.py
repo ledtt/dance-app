@@ -1,10 +1,11 @@
 # services/auth/main.py
 
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
-from contextlib import asynccontextmanager
 
 from .auth import authenticate_user, create_access_token, get_current_user
 from .db import get_db, init_db
@@ -14,7 +15,7 @@ from .schemas import UserCreate, UserOut, Token
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     await init_db()
     yield
 

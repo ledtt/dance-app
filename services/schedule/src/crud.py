@@ -1,9 +1,12 @@
+from uuid import UUID
+from collections.abc import Sequence
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from collections.abc import Sequence
+
 from .models import ClassTemplate
 from .schemas import ClassCreate
-from uuid import UUID
+
 
 async def create_class(db: AsyncSession, class_data: ClassCreate) -> ClassTemplate:
     new_class = ClassTemplate(**class_data.model_dump())

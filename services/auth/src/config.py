@@ -1,9 +1,7 @@
 # services/auth/config.py
 
 import os
-from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import Optional
 from pydantic import Field
 
 class Settings(BaseSettings):
