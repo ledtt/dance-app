@@ -23,6 +23,6 @@ jobs:
         run: |
           pylint $(git ls-files '*.py')
       - name: Unit tests (auth)
-        run: pytest tests/auth
+        run: PYTHONPATH=. pytest tests/auth
       - name: Unit tests (schedule)
-        run: pytest tests/schedule
+        run: PYTHONPATH=. pytest tests/schedule
