@@ -2,8 +2,8 @@
 
 import pytest
 from httpx import AsyncClient, ASGITransport
-from src.main import app
-from src.db import init_db
+from services.schedule.src.main import app
+from services.schedule.src.db import init_db
 
 
 @pytest.mark.asyncio
