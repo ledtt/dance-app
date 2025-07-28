@@ -1,6 +1,6 @@
 [MASTER]
 ignore=venv
-init-hook='import sys; sys.path.append("services")'
+init-hook='import sys; sys.path.append(".")'
 
 [MESSAGES CONTROL]
 disable=
