@@ -10,7 +10,7 @@ from .models import Base
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL: str = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
+DATABASE_URL: str = str(settings.database_url).replace("postgresql://", "postgresql+asyncpg://")
 
 engine = create_async_engine(
     DATABASE_URL,
