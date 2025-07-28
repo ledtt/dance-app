@@ -30,6 +30,11 @@ services:
       - postgres
     ports:
       - "8001:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/auth"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   schedule-service:
     build:
@@ -44,6 +49,11 @@ services:
       - postgres
     ports:
       - "8002:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/schedule"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   booking-service:
     build:
