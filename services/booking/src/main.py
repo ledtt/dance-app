@@ -57,9 +57,16 @@ async def my_bookings(
 async def admin_summary(db: AsyncSession = Depends(get_db)):
     rows = await get_all_bookings_with_summary(db)
 
-    html = "<h2>Записи на занятия</h2><table border='1'><tr><th>Дата</th><th>Время</th><th>Класс</th><th>Пользователь</th></tr>"
+    html = (
+        "<h2>Записи на занятия</h2>"
+        "<table border='1'>"
+        "<tr><th>Дата</th><th>Время</th><th>Класс</th><th>Пользователь</th></tr>")
     for row in rows:
-        html += f"<tr><td>{row.date}</td><td>{row.start_time.strftime('%H:%M')}</td><td>{row.class_id}</td><td>{row.user_id}</td></tr>"
+        html += (
+            f"<tr><td>{row.date}</td>"
+            f"<td>{row.start_time.strftime('%H:%M')}</td>"
+            f"<td>{row.class_id}</td>"
+            f"<td>{row.user_id}</td></tr>"
+        )
     html += "</table>"
-
     return html
