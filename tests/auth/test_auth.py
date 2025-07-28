@@ -2,8 +2,8 @@
 
 import pytest
 from httpx import AsyncClient, ASGITransport
-from src.main import app
-from src.db import init_db
+from services.auth.src.main import app
+from services.auth.src.db import init_db
 
 @pytest.mark.asyncio
 async def test_register_login_me_flow():

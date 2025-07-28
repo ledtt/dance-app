@@ -1,9 +1,11 @@
 # services/auth/schemas.py
 
-from typing import Literal
+from typing import Literal, Any
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, SecretStr, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, \
+    SecretStr, ValidationInfo, model_validator
+
 
 
 class UserCreate(BaseModel):
@@ -23,12 +25,23 @@ class UserCreate(BaseModel):
     )
 
     @model_validator(mode="before")
-    def check_password_complexity(self, values):
-        pwd = values.get("password")
-        raw = pwd.get_secret_value() if isinstance(pwd, SecretStr) else pwd
+    @classmethod
+    def check_password_complexity(
+        cls, data: dict[str, Any], info: ValidationInfo
+    ) -> dict[str, Any]:
+        pwd = data.get("password")
+        if pwd is None:
+            return data
+
+        if isinstance(pwd, SecretStr):
+            raw = pwd.get_secret_value()
+        else:
+            raw = str(pwd)
+
         if not any(c.isalpha() for c in raw) or not any(c.isdigit() for c in raw):
             raise ValueError("Пароль должен содержать и буквы, и цифры")
-        return values
+
+        return data
 
 
 class UserOut(BaseModel):

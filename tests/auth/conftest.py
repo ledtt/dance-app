@@ -4,8 +4,8 @@ import pytest
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from src.db import engine
-from src.models import Base
+from services.auth.src.db import engine
+from services.auth.src.models import Base
 
 @pytest.fixture(scope="function", autouse=True)
 async def reset_db():
