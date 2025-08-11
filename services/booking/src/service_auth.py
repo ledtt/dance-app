@@ -62,9 +62,9 @@ async def verify_service_token_dependency(authorization: str = Depends(oauth2_sc
 
 
 # Service Token Manager for requesting tokens from auth-service
-import httpx
 from typing import Optional
 from datetime import datetime, timedelta
+import httpx
 
 class ServiceTokenManager:
     def __init__(self):
@@ -107,14 +107,14 @@ class ServiceTokenManager:
                     
                     logger.info("Service token obtained successfully", service_name=self._service_name)
                     return self._cached_token
-                else:
-                    logger.error("Failed to obtain service token", 
-                               status_code=response.status_code,
-                               response_text=response.text)
-                    raise HTTPException(
-                        status_code=503,
-                        detail="Failed to obtain service token"
-                    )
+                
+                logger.error("Failed to obtain service token", 
+                           status_code=response.status_code,
+                           response_text=response.text)
+                raise HTTPException(
+                    status_code=503,
+                    detail="Failed to obtain service token"
+                )
                     
         except httpx.TimeoutException:
             logger.error("Timeout while requesting service token")

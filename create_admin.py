@@ -82,7 +82,7 @@ def create_admin_user():
     except psycopg2.Error as e:
         print(f"Database error: {e}")
         sys.exit(1)
-    except Exception as e:
+    except (OSError, ValueError) as e:
         print(f"Error: {e}")
         sys.exit(1)
     finally:

@@ -4,6 +4,7 @@ from typing import Optional
 from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import datetime
+import structlog
 
 from .models import ClassTemplate
 from .schemas import ClassCreate
@@ -35,7 +36,6 @@ async def get_classes_by_filter(
     offset: int = 0
 ) -> Sequence[ClassTemplate]:
     """Get classes with filtering"""
-    import structlog
     logger = structlog.get_logger()
     
     logger.info("Filtering classes", day=day, teacher=teacher, name=name, active=active)
@@ -49,7 +49,7 @@ async def get_classes_by_filter(
     if name:
         conditions.append(ClassTemplate.name.ilike(f"%{name}%"))
     if active is not None:
-        conditions.append(ClassTemplate.active == active)
+        conditions.append(ClassTemplate.active.is_(active))
     
     logger.info("Built conditions", conditions_count=len(conditions))
     
@@ -85,7 +85,6 @@ async def check_teacher_schedule_conflict(
 ) -> bool:
     """Check if teacher has schedule conflict"""
     # Debug: Log the type and value of start_time
-    import structlog
     logger = structlog.get_logger()
     logger.info("Checking teacher schedule conflict", 
                 teacher=teacher, 
@@ -97,7 +96,7 @@ async def check_teacher_schedule_conflict(
         ClassTemplate.teacher == teacher,
         ClassTemplate.weekday == weekday,
         ClassTemplate.start_time == start_time,
-        ClassTemplate.active == True
+        ClassTemplate.active.is_(True)
     ]
     
     if exclude_class_id:
@@ -116,7 +115,6 @@ async def check_teacher_schedule_conflict(
 async def create_class(db: AsyncSession, class_data: ClassCreate) -> ClassTemplate:
     """Create a new class"""
     # Debug: Log the incoming data
-    import structlog
     logger = structlog.get_logger()
     logger.info("Creating class", 
                 name=class_data.name,
@@ -239,7 +237,7 @@ async def get_class_statistics(db: AsyncSession) -> dict:
     total_classes = total_result.scalar_one()
     
     # Active classes
-    active_result = await db.execute(select(func.count(ClassTemplate.id)).where(ClassTemplate.active == True))
+    active_result = await db.execute(select(func.count(ClassTemplate.id)).where(ClassTemplate.active.is_(True)))
     active_classes = active_result.scalar_one()
     
     # Total unique teachers

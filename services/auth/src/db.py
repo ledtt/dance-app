@@ -34,13 +34,13 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 async def init_db() -> None:
     async with engine.begin() as conn:
         # Create tables
-        await conn.run_sync(Base.metadata.create_all)
-        
-        # Add is_active column if it doesn't exist
         try:
+            await conn.run_sync(Base.metadata.create_all)
+            
+            # Add is_active column if it doesn't exist
             await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))
             await conn.commit()
             logger.info("Database initialized successfully")
-        except Exception as e:
-            logger.warning(f"Could not add is_active column: {e}")
-            # Column might already exist, which is fine
+        except Exception as exc:
+            logger.error("Failed to create database tables: %s", str(exc))
+            raise

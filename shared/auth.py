@@ -171,7 +171,7 @@ def create_get_current_user_dependency(jwt_manager: JWTManager) -> Callable[...,
                 "role": payload.get("role", "user") # Default to 'user'
             }
             if not user_data["id"]:
-                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
             return UserInToken(**user_data)
         except HTTPException:

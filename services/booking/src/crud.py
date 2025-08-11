@@ -162,7 +162,7 @@ async def get_all_bookings_with_summary(
             
             logger.info(f"Found {len(filtered_class_ids)} classes matching filters", 
                        teacher=teacher, class_name=class_name, class_ids=filtered_class_ids[:5])  # Log first 5 IDs
-        except Exception as e:
+        except (ValueError, TypeError, ConnectionError) as e:
             logger.error("Exception while getting class IDs from schedule service", 
                         error=str(e), teacher=teacher, class_name=class_name)
             return []

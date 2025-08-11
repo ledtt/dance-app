@@ -41,7 +41,7 @@ async def get_class_template_by_id(class_id: str) -> Union[dict, None]:
     except httpx.RequestError as e:
         logger.error("Request error when calling schedule service", class_id=class_id, error=str(e))
         return None
-    except Exception as e:
+    except (ValueError, TypeError, ConnectionError) as e:
         logger.error("Unexpected error when calling schedule service", class_id=class_id, error=str(e))
         return None
 
@@ -79,7 +79,7 @@ async def get_user_by_id(user_id: str) -> Union[dict, None]:
     except httpx.RequestError as e:
         logger.error("Request error when calling auth service", user_id=user_id, error=str(e))
         return None
-    except Exception as e:
+    except (ValueError, TypeError, ConnectionError) as e:
         logger.error("Unexpected error when calling auth service", user_id=user_id, error=str(e))
         return None
 
@@ -134,6 +134,6 @@ async def get_class_ids_by_filter(teacher: Optional[str] = None, name: Optional[
     except httpx.RequestError as e:
         logger.error("Request error when calling schedule service for class IDs", error=str(e))
         return None
-    except Exception as e:
+    except (ValueError, TypeError, ConnectionError) as e:
         logger.error("Unexpected error when calling schedule service for class IDs", error=str(e), error_type=type(e).__name__)
         return None

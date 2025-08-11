@@ -65,8 +65,7 @@ def conditional_rate_limit(limit_string: str):
     """Apply rate limiting only if not in testing mode"""
     if os.getenv("TESTING_MODE") == "true":
         return lambda func: func  # No-op decorator
-    else:
-        return limiter.limit(limit_string)
+    return limiter.limit(limit_string)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):

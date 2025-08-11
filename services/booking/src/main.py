@@ -236,7 +236,7 @@ async def admin_get_all_bookings(
                    had_class_name_filter=bool(filters.class_name))
         
         return create_paginated_response(bookings, total_count, page, size)
-    except Exception as e:
+    except (ValueError, TypeError, ConnectionError) as e:
         logger.error("Error retrieving bookings for admin", 
                     error=str(e), 
                     error_type=type(e).__name__,
@@ -265,7 +265,7 @@ async def admin_statistics(
                         "id": most_popular_class_id,
                         "name": class_info.get("name", "Unknown Class")
                     }
-            except Exception:
+            except (ValueError, TypeError, ConnectionError):
                 most_popular_class = {
                     "id": most_popular_class_id,
                     "name": "Unknown Class"
