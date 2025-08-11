@@ -1,0 +1,153 @@
+services:
+  # PostgreSQL Database (тестовая база)
+  postgres:
+    image: postgres:15
+    container_name: dance-postgres-local
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./aws-config/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dance_app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - dance-network
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: dance-auth-service-local
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - RATE_LIMIT_LOGIN=${RATE_LIMIT_LOGIN}
+      - RATE_LIMIT_REGISTER=${RATE_LIMIT_REGISTER}
+      - SQLALCHEMY_ECHO=${SQLALCHEMY_ECHO}
+      - TESTING_MODE=${TESTING_MODE}
+      - ADMIN_EMAILS=${ADMIN_EMAILS}
+      - INTERNAL_AUTH_TOKEN=${INTERNAL_AUTH_TOKEN}
+      - SERVICE_TOKEN_EXPIRE_MINUTES=${SERVICE_TOKEN_EXPIRE_MINUTES}
+      - SERVICE_JWT_SECRET=${SERVICE_JWT_SECRET}
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dance-network
+
+  # Schedule Service
+  schedule-service:
+    build:
+      context: .
+      dockerfile: services/schedule/Dockerfile
+    container_name: dance-schedule-service-local
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - SQLALCHEMY_ECHO=${SQLALCHEMY_ECHO}
+      - SERVICE_TOKEN_EXPIRE_MINUTES=${SERVICE_TOKEN_EXPIRE_MINUTES}
+      - SERVICE_JWT_SECRET=${SERVICE_JWT_SECRET}
+      - INTERNAL_AUTH_TOKEN=${INTERNAL_AUTH_TOKEN}
+    ports:
+      - "8002:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dance-network
+
+  # Booking Service
+  booking-service:
+    build:
+      context: .
+      dockerfile: services/booking/Dockerfile
+    container_name: dance-booking-service-local
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - SCHEDULE_SERVICE_URL=${SCHEDULE_SERVICE_URL}
+      - AUTH_SERVICE_URL=${AUTH_SERVICE_URL}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - SQLALCHEMY_ECHO=${SQLALCHEMY_ECHO}
+      - SERVICE_TOKEN_EXPIRE_MINUTES=${SERVICE_TOKEN_EXPIRE_MINUTES}
+      - SERVICE_JWT_SECRET=${SERVICE_JWT_SECRET}
+      - INTERNAL_AUTH_TOKEN=${INTERNAL_AUTH_TOKEN}
+    ports:
+      - "8003:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      schedule-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - dance-network
+
+  # Frontend Application
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: dance-frontend-local
+    ports:
+      - "80:80"
+    depends_on:
+      - auth-service
+      - schedule-service
+      - booking-service
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - dance-network
+    environment:
+      - NGINX_HOST=${NGINX_HOST}
+      - NGINX_PORT=${NGINX_PORT}
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  dance-network:
+    driver: bridge 
