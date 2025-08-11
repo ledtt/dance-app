@@ -1,0 +1,17 @@
+pytest==8.2.1
+pytest-asyncio==0.23.6
+pytest-mock
+pytest-cov==4.1.0
+httpx==0.25.2
+fastapi==0.104.1
+sqlalchemy>=2.0.25
+psycopg2-binary>=2.9.10
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+PyJWT==2.8.0
+structlog==24.1.0
+email-validator
+pydantic-settings==2.10.1
+asyncpg
+
