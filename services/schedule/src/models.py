@@ -1,16 +1,16 @@
 import uuid
-import datetime  # импорт целиком
+import datetime  # import whole module
 
-from sqlalchemy import String, Time, Integer, Boolean, DateTime, func
+from sqlalchemy import String, Time, Integer, Boolean, DateTime, func, Text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
     """
-    SQLAlchemy 2.0-style базовый класс.
-    Все модели наследуют DeclarativeBase,
-    которое понимается Pylance и позволяет аннотировать поля.
+    SQLAlchemy 2.0-style base class.
+    All models inherit from DeclarativeBase,
+    which is understood by Pylance and allows field annotation.
     """
 
 
@@ -41,7 +41,7 @@ class ClassTemplate(Base):
         nullable=False,
     )
 
-    time: Mapped[datetime.time] = mapped_column(  # <-- вот тут
+    start_time: Mapped[datetime.time] = mapped_column(
         Time,
         nullable=False,
     )
@@ -51,10 +51,15 @@ class ClassTemplate(Base):
         nullable=False,
     )
 
+    comment: Mapped[str] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
     active: Mapped[bool] = mapped_column(
         Boolean,
-        nullable=False,
         default=True,
+        nullable=False,
     )
 
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -71,4 +76,4 @@ class ClassTemplate(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<ClassTemplate id={self.id} name='{self.name}' teacher='{self.teacher}'>"
+        return f'<ClassTemplate id={self.id} name="{self.name}">'

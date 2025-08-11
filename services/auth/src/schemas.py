@@ -1,60 +1,96 @@
 # services/auth/schemas.py
 
-from typing import Literal, Any
+import re
+from typing import Literal, Any, Optional
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, \
-    SecretStr, ValidationInfo, model_validator
-
+    SecretStr, field_validator
+from shared.utils import sanitize_name, validate_password_strength_raise
 
 
 class UserCreate(BaseModel):
     email: EmailStr = Field(
-        ..., description="Почта пользователя, проверяется через EmailStr"
+        ..., description="User email address, validated through EmailStr"
     )
     name: str = Field(
         ...,
         min_length=1,
         max_length=100,
-        description="Имя пользователя (1–100 символов)",
+        description="User name (1-100 characters)",
     )
     password: SecretStr = Field(
         ...,
         min_length=8,
-        description="Пароль (не менее 8 символов)",
+        max_length=128,
+        description="Password (8-128 characters)",
     )
 
-    @model_validator(mode="before")
+    @field_validator('name')
     @classmethod
-    def check_password_complexity(
-        cls, data: dict[str, Any], info: ValidationInfo
-    ) -> dict[str, Any]:
-        pwd = data.get("password")
-        if pwd is None:
-            return data
+    def validate_and_sanitize_name(cls, v: str) -> str:
+        return sanitize_name(v)
 
-        if isinstance(pwd, SecretStr):
-            raw = pwd.get_secret_value()
-        else:
-            raw = str(pwd)
-
-        if not any(c.isalpha() for c in raw) or not any(c.isdigit() for c in raw):
-            raise ValueError("Пароль должен содержать и буквы, и цифры")
-
-        return data
+    @field_validator('password')
+    @classmethod
+    def password_strength(cls, v: SecretStr) -> SecretStr:
+        validate_password_strength_raise(v.get_secret_value())
+        return v
 
 
 class UserOut(BaseModel):
-    id: UUID = Field(..., description="UUID пользователя")
-    email: EmailStr = Field(..., description="Почта пользователя")
-    name: str = Field(..., description="Имя пользователя")
-    created_at: datetime = Field(..., description="Время создания записи")
-    updated_at: datetime = Field(..., description="Время последнего обновления")
+    id: UUID = Field(..., description="User UUID")
+    email: str = Field(..., description="User email")
+    name: str = Field(..., description="User name")
+    is_active: bool = Field(..., description="User active status")
+    created_at: datetime = Field(..., description="Account creation date")
+    updated_at: datetime = Field(..., description="Last update date")
+    role: str | None = Field(None, description="User role (admin or user)")
+
     model_config = ConfigDict(from_attributes=True)
 
 
-class Token(BaseModel):
-    access_token: str = Field(..., description="JWT для доступа")
-    token_type: Literal["bearer"] = Field(
-        "bearer", description="Тип токена (должно быть 'bearer')"
+class UserUpdate(BaseModel):
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="User name (1-100 characters)",
     )
+
+    @field_validator('name')
+    @classmethod
+    def validate_and_sanitize_name(cls, v: str) -> str:
+        return sanitize_name(v)
+
+
+class UserRoleUpdate(BaseModel):
+    role: str = Field(..., pattern="^(user|admin)$", description="User role (user or admin)")
+
+
+class PasswordChange(BaseModel):
+    current_password: SecretStr = Field(
+        ..., description="Current password"
+    )
+    new_password: SecretStr = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="New password (8-128 characters)",
+    )
+
+    @field_validator('new_password')
+    @classmethod
+    def password_strength(cls, v: SecretStr) -> SecretStr:
+        validate_password_strength_raise(v.get_secret_value())
+        return v
+
+
+class Token(BaseModel):
+    access_token: str = Field(..., description="JWT access token")
+    token_type: str = Field(default="bearer", description="Token type")
+    expires_in: int = Field(..., description="Token expiration time in seconds")
+
+
+class TokenData(BaseModel):
+    user_id: str | None = None
