@@ -3,16 +3,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import String, DateTime, func
+from sqlalchemy import String, DateTime, func, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
     """
-    SQLAlchemy 2.0-style базовый класс.
-    Все модели наследуют DeclarativeBase,
-    которое понимается Pylance и позволяет аннотировать поля.
+    SQLAlchemy 2.0-style base class.
+    All models inherit from DeclarativeBase,
+    which is understood by Pylance and allows field annotation.
     """
 
 
@@ -42,6 +42,19 @@ class User(Base):
 
     password_hash: Mapped[str] = mapped_column(
         String(128),
+        nullable=False,
+    )
+
+    role: Mapped[str] = mapped_column(
+        String(50),
+        default="user",
+        nullable=False,
+        server_default="user"
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
         nullable=False,
     )
 

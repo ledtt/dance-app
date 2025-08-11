@@ -4,7 +4,7 @@ import logging
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
+from sqlalchemy import text
 from .config import settings
 from .models import Base 
 
@@ -14,23 +14,33 @@ DATABASE_URL: str = str(settings.database_url).replace("postgresql://", "postgre
 
 engine = create_async_engine(
     DATABASE_URL,
-    echo=settings.sqlalchemy_echo,
-    future=True,
+    echo=settings.debug,
+    pool_pre_ping=True,
 )
 
 AsyncSessionLocal = async_sessionmaker(
-    bind=engine,
-    autoflush=False,
-    autocommit=False,
-    expire_on_commit=False,
+    engine,
     class_=AsyncSession,
+    expire_on_commit=False,
 )
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
 
 async def init_db() -> None:
     async with engine.begin() as conn:
+        # Create tables
         await conn.run_sync(Base.metadata.create_all)
-    logger.info("Async database schema created (if not existed).")
+        
+        # Add is_active column if it doesn't exist
+        try:
+            await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"))
+            await conn.commit()
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.warning(f"Could not add is_active column: {e}")
+            # Column might already exist, which is fine
