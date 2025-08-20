@@ -1,0 +1,53 @@
+# .github/workflows/reusable-python-ci.yml
+
+name: Reusable Python Service CI
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: 'The name of the service (e.g., auth)'
+        required: true
+        type: string
+      service_path:
+        description: 'The path to the service directory (e.g., ./services/auth)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  unit-testing:
+    name: Unit Tests for ${{ inputs.service_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: |
+            **/requirements*.txt 
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r tests/unit/requirements.txt
+          pip install -r ${{ inputs.service_path }}/requirements.txt
+
+      - name: Run unit tests with coverage
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          JWT_SECRET: ${{ 'your-super-secret-jwt-key-here-for-local-testing' }}
+          JWT_ALGORITHM: HS256
+          SCHEDULE_SERVICE_URL: http://localhost:8000
+          AUTH_SERVICE_URL: http://localhost:8000
+          PYTHONPATH: . 
+        run: |
+          # Запускаем тесты. Можно указать конкретную папку тестов, если они разделены по сервисам
+          python -m pytest tests/unit/${{ inputs.service_name }}/ -v --cov=${{ inputs.service_path }} --cov-report=xml

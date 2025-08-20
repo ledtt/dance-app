@@ -1,0 +1,41 @@
+name: Build Prod and Trigger Deploy
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The git tag to deploy (e.g., v1.2.3)'
+        required: true
+
+jobs:
+  build-services:
+    name: Build Service - ${{ matrix.service_name }}
+    uses: ./.github/workflows/reusable-service-build.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        service_name: [auth, booking, schedule]
+    with:
+      environment: prod
+      service_name: ${{ matrix.service_name }}
+      image_tag: ${{ github.event.inputs.tag }}
+    secrets: inherit
+
+  build-frontend:
+    name: Build Frontend
+    uses: ./.github/workflows/reusable-frontend-cd.yml
+    with:
+      environment: prod
+    secrets: inherit
+
+  trigger-deployment:
+    name: Trigger Infrastructure Deploy
+    needs: [build-services, build-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployment workflow in infra repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TERRAFORM_REPO_PAT }}
+          repository: ${{ vars.TERRAFORM_REPO_NAME }}
+          event-type: deploy-prod 
+          client-payload: '{"tag": "${{ github.event.inputs.tag }}"}'

@@ -1,0 +1,45 @@
+name: Reusable Linter
+
+on:
+  workflow_call:
+    inputs:
+      service-paths-json:
+        description: 'A JSON string array of paths to service directories'
+        required: true
+        type: string
+        
+permissions:
+  contents: read
+
+jobs:
+  linting:
+    name: Run Pylint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: "pip"
+
+      - name: Install dependencies from service paths
+        run: |
+          python -m pip install --upgrade pip
+          pip install pylint
+
+          echo '${{ inputs.service-paths-json }}' | jq -r '.[]' | while read service_path; do
+            req_file="$service_path/requirements.txt"
+            if [ -f "$req_file" ]; then
+              echo "Installing from $req_file"
+              pip install -r "$req_file"
+            else
+              echo "Warning: $req_file not found."
+            fi
+          done
+
+      - name: Analyse code with pylint
+        run: |
+          pylint --fail-under=9.0 $(git ls-files '*.py')
