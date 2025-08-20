@@ -6,6 +6,10 @@ on:
         description: 'The git tag to deploy (e.g., v1.2.3)'
         required: true
 
+permissions:
+  id-token: write 
+  contents: read  
+
 jobs:
   build-services:
     name: Build Service - ${{ matrix.service_name }}

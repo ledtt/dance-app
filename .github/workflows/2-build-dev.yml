@@ -3,9 +3,13 @@ on:
   push:
     branches: [ develop ]
 
+permissions:
+  id-token: write 
+  contents: read  
+
 jobs:
   build-services:
-    name: Build Service - ${{ matrix.service_name }}
+    name: Build git Service - ${{ matrix.service_name }}
     uses: ./.github/workflows/reusable-service-build.yml
     strategy:
       fail-fast: false
