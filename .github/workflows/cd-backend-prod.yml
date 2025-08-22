@@ -1,10 +1,11 @@
-name: Build Prod and Trigger Deploy
+# .github/workflows/cd-backend-prod.yml
+
+name: Backend CD (Prod)
+
 on:
+  push:
+    tags: [ 'v*.*.*' ] 
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'The git tag to deploy (e.g., v1.2.3)'
-        required: true
 
 permissions:
   id-token: write 
@@ -13,33 +14,27 @@ permissions:
 jobs:
   build-services:
     name: Build Service - ${{ matrix.service_name }}
-    uses: ./.github/workflows/reusable-service-build.yml
     strategy:
       fail-fast: false
       matrix:
         service_name: [auth, booking, schedule]
+        
+    uses: ./.github/workflows/reusable/backend-build.yml
     with:
       environment: prod
       service_name: ${{ matrix.service_name }}
-      image_tag: ${{ github.event.inputs.tag }}
-    secrets: inherit
-
-  build-frontend:
-    name: Build Frontend
-    uses: ./.github/workflows/reusable-frontend-cd.yml
-    with:
-      environment: prod
+      image_tag: ${{ github.ref_name }} 
     secrets: inherit
 
   trigger-deployment:
     name: Trigger Infrastructure Deploy
-    needs: [build-services, build-frontend]
+    needs: build-services
     runs-on: ubuntu-latest
     steps:
       - name: Trigger deployment workflow in infra repo
         uses: peter-evans/repository-dispatch@v3
         with:
           token: ${{ secrets.TERRAFORM_REPO_PAT }}
-          repository: ${{ vars.TERRAFORM_REPO_NAME }}
+          repository: ${{ vars.TERRAFORM_REPO_NAME }} 
           event-type: deploy-prod 
-          client-payload: '{"tag": "${{ github.event.inputs.tag }}"}'
+          client-payload: '{ "image_tag": "${{ github.ref_name }}" }'

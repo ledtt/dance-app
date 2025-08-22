@@ -30,7 +30,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE }}
+          role-to-assume: ${{ secrets.AWS_FRONTEND_ROLE }}
           aws-region: ${{ vars.AWS_REGION }}
 
       - name: Setup Node.js

@@ -65,7 +65,7 @@ jobs:
       - name: Store image URI in SSM Parameter Store
         run: |
           IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_PREFIX }}/${{ inputs.service_name }}:${{ inputs.image_tag }}"
-          SSM_PARAM_NAME="/${{ vars.SSM_PARAM_PREFIX }}/${{ inputs.environment }}/${{ inputs.service_name }}/image_uri"
+          SSM_PARAM_NAME="/${{ vars.SSM_PARAM_PREFIX }}/${{ inputs.environment }}/${{ inputs.service_name }}/image"
           
           echo "Storing Image URI ($IMAGE_URI) in SSM Parameter ($SSM_PARAM_NAME)"
           aws ssm put-parameter --name "$SSM_PARAM_NAME" --value "$IMAGE_URI" --type "String" --overwrite --region ${{ vars.AWS_REGION }}

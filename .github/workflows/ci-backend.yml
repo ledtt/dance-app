@@ -1,27 +1,21 @@
-# .github/workflows/1-ci-checks.yml
-
-name: CI Checks (Lint & Unit Tests)
+# .github/workflows/ci-backend.yml
+name: Backend CI Checks
 
 on:
   pull_request:
-    branches:
-      - main
-      - develop
-  push: 
-    branches:
-      - develop
-      - 'feature/**'
+    paths:
+      - 'services/**'
 
 jobs:
   lint:
     name: Linting
-    uses: ./.github/workflows/reusable-linter.yml
+    uses: ./.github/workflows/reusable/linter.yml
     with:
       service-paths-json: '["./services/auth", "./services/booking", "./services/schedule"]'
 
   unit-tests:
     name: Unit Tests
-    uses: ./.github/workflows/reusable-python-ci.yml
+    uses: ./.github/workflows/reusable/python-backend-ci.yml
     secrets: inherit 
     strategy:
       fail-fast: false 

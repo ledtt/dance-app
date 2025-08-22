@@ -1,0 +1,18 @@
+# .github/workflows/cd-frontend-dev.yml
+
+name: Frontend CD (Dev)
+
+on:
+  push:
+    branches: [ develop ]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+jobs:
+  deploy-dev:
+    name: Build & Deploy to Dev
+    uses: ./.github/workflows/reusable/frontend-ci-cd.yml
+    with:
+      environment: dev
+    secrets: inherit 
