@@ -12,7 +12,7 @@ on:
 jobs:
   deploy-dev:
     name: Build & Deploy to Dev
-    uses: ./.github/workflows/reusable/frontend-ci-cd.yml
+    uses: ./.github/workflows/reusable-frontend-ci-cd.yml
     with:
       environment: dev
     secrets: inherit 

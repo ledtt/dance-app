@@ -19,7 +19,7 @@ jobs:
       matrix:
         service_name: [auth, booking, schedule]
         
-    uses: ./.github/workflows/reusable/backend-build.yml
+    uses: ./.github/workflows/reusable-backend-build.yml
     with:
       environment: prod
       service_name: ${{ matrix.service_name }}

@@ -10,7 +10,7 @@ on:
 jobs:
   deploy-prod:
     name: Build & Deploy to Prod
-    uses: ./.github/workflows/reusable/frontend-ci-cd.yml
+    uses: ./.github/workflows/reusable-frontend-ci-cd.yml
     with:
       environment: prod
     secrets: inherit 

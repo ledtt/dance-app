@@ -45,7 +45,7 @@ jobs:
       matrix:
         service_name: ${{ fromJson(needs.detect-changes.outputs.changed_services_json) }}
         
-    uses: ./.github/workflows/reusable/backend-build.yml
+    uses: ./.github/workflows/reusable-backend-build.yml
     with:
       environment: dev
       service_name: ${{ matrix.service_name }}
