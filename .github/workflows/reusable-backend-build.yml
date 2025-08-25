@@ -55,7 +55,7 @@ jobs:
         id: build-image
         uses: docker/build-push-action@v6.3.0
         with:
-          context: ./services/${{ inputs.service_name }}
+          context: .
           file: ./services/${{ inputs.service_name }}/Dockerfile
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_PREFIX }}/${{ inputs.service_name }}:${{ inputs.image_tag }}
