@@ -1,0 +1,38 @@
+# .github/workflows/cd-backend-dev-manual.yml
+
+name: Backend CD (Dev - Manual Initial Deploy)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-all-services:
+    name: Build Service - ${{ matrix.service_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service_name: [auth, booking, schedule]
+
+    uses: ./.github/workflows/reusable-backend-build.yml
+    with:
+      environment: dev
+      service_name: ${{ matrix.service_name }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+
+  trigger-deployment:
+    name: Trigger Infrastructure Deploy
+    needs: build-all-services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployment workflow in infra repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TERRAFORM_REPO_PAT }}
+          repository: ${{ vars.TERRAFORM_REPO_NAME }}
+          event-type: deploy-dev
+          client-payload: '{ "image_tag": "${{ github.sha }}" }'
