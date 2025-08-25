@@ -22,7 +22,8 @@ jobs:
       environment: dev
       service_name: ${{ matrix.service_name }}
       image_tag: ${{ github.sha }}
-    secrets: inherit
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_BUILD_ROLE }}
 
   trigger-deployment:
     name: Trigger Infrastructure Deploy
