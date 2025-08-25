@@ -1,0 +1,33 @@
+# .github/workflows/ci-backend.yml
+name: Backend CI Checks
+
+on:
+  pull_request:
+    paths:
+      - 'services/**'
+
+jobs:
+  lint:
+    name: Linting
+    uses: ./.github/workflows/reusable-linter.yml
+    with:
+      service-paths-json: '["./services/auth", "./services/booking", "./services/schedule"]'
+
+  unit-tests:
+    name: Unit Tests
+    uses: ./.github/workflows/reusable-python-backend-ci.yml
+    secrets: inherit 
+    strategy:
+      fail-fast: false 
+      matrix:
+        service:
+          - name: auth
+            path: ./services/auth
+          - name: booking
+            path: ./services/booking
+          - name: schedule
+            path: ./services/schedule
+    with:
+      service_name: ${{ matrix.service.name }}
+      service_path: ${{ matrix.service.path }}
+

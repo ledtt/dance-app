@@ -1,0 +1,40 @@
+# .github/workflows/cd-backend-prod.yml
+
+name: Backend CD (Prod)
+
+on:
+  push:
+    tags: [ 'v*.*.*' ] 
+  workflow_dispatch:
+
+permissions:
+  id-token: write 
+  contents: read  
+
+jobs:
+  build-services:
+    name: Build Service - ${{ matrix.service_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service_name: [auth, booking, schedule]
+        
+    uses: ./.github/workflows/reusable-backend-build.yml
+    with:
+      environment: prod
+      service_name: ${{ matrix.service_name }}
+      image_tag: ${{ github.ref_name }} 
+    secrets: inherit
+
+  trigger-deployment:
+    name: Trigger Infrastructure Deploy
+    needs: build-services
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployment workflow in infra repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TERRAFORM_REPO_PAT }}
+          repository: ${{ vars.TERRAFORM_REPO_NAME }} 
+          event-type: deploy-prod 
+          client-payload: '{ "image_tag": "${{ github.ref_name }}" }'

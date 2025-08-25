@@ -1,0 +1,67 @@
+# .github/workflows/cd-backend-dev.yml
+
+name: Backend CD (Dev)
+
+on:
+  push:
+    branches: [ develop ]
+    paths: [ 'services/**' ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write 
+  contents: read  
+
+jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      changed_services_json: ${{ steps.filter.outputs.changes }}
+      
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          list-files: 'json' 
+          filters: |
+            auth: 
+              - 'services/auth/**'
+            booking:
+              - 'services/booking/**'
+            schedule:
+              - 'services/schedule/**'
+
+  build-services:
+    name: Build Service - ${{ matrix.service_name }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed_services_json != '[]'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        service_name: ${{ fromJson(needs.detect-changes.outputs.changed_services_json) }}
+        
+    uses: ./.github/workflows/reusable-backend-build.yml
+    with:
+      environment: dev
+      service_name: ${{ matrix.service_name }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit 
+
+  trigger-deployment:
+    name: Trigger Infrastructure Deploy
+    needs: [detect-changes, build-services]
+    if: needs.detect-changes.outputs.changed_services_json != '[]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger deployment workflow in infra repo
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.TERRAFORM_REPO_PAT }}
+          repository: ${{ vars.TERRAFORM_REPO_NAME }} 
+          event-type: deploy-dev 
+          client-payload: '{ "image_tag": "${{ github.sha }}", "changed_services": ${{ needs.detect-changes.outputs.changed_services_json }} }'

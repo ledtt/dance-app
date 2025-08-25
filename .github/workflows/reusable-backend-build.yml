@@ -1,0 +1,71 @@
+name: Reusable Service Build & Push
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'The target environment name (e.g., dev, prod)'
+        required: true
+        type: string
+      service_name:
+        description: 'The name of the service to build'
+        required: true
+        type: string
+      image_tag:
+        description: 'The tag for the Docker image'
+        required: true
+        type: string
+    secrets:
+      AWS_ROLE_TO_ASSUME:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build & Push ${{ inputs.service_name }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}э
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Get short SHA
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_BUILD_ROLE }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.3.0
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        uses: docker/build-push-action@v6.3.0
+        with:
+          context: ./services/${{ inputs.service_name }}
+          file: ./services/${{ inputs.service_name }}/Dockerfile
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_PREFIX }}/${{ inputs.service_name }}:${{ inputs.image_tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Store image URI in SSM Parameter Store
+        run: |
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/${{ vars.ECR_REPOSITORY_PREFIX }}/${{ inputs.service_name }}:${{ inputs.image_tag }}"
+          SSM_PARAM_NAME="/${{ vars.SSM_PARAM_PREFIX }}/${{ inputs.environment }}/${{ inputs.service_name }}/image"
+          
+          echo "Storing Image URI ($IMAGE_URI) in SSM Parameter ($SSM_PARAM_NAME)"
+          aws ssm put-parameter --name "$SSM_PARAM_NAME" --value "$IMAGE_URI" --type "String" --overwrite --region ${{ vars.AWS_REGION }}
