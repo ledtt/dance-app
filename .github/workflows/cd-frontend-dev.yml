@@ -19,4 +19,5 @@ jobs:
     uses: ./.github/workflows/reusable-frontend-ci-cd.yml
     with:
       environment: dev
-    secrets: inherit 
+    secrets:
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_FRONTEND_ROLE }}
