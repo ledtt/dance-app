@@ -9,6 +9,10 @@ on:
       - 'frontend/**'
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy-dev:
     name: Build & Deploy to Dev
