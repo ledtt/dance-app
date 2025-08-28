@@ -7,6 +7,9 @@ WORKDIR /app
 COPY services/schedule/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
@@ -15,5 +18,5 @@ ENV PYTHONUNBUFFERED=1 \
 COPY services/schedule/ .
 COPY shared/ ./shared/
 
-# Start the application
+ENTRYPOINT ["entrypoint.sh"]
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
