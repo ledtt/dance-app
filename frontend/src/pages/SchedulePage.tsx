@@ -108,10 +108,6 @@ export const SchedulePage: React.FC = () => {
     // queryClient.invalidateQueries('myBookings');
   };
 
-  const isClassBooked = (classId: string) => {
-    return myBookings?.some(booking => booking.class_id === classId) || false;
-  };
-
   // Extract unique teachers for filter from all data (not filtered)
   const teachers = Array.from(
     new Set(allTeachersData?.items?.map((classItem: any) => classItem.teacher) || [])
@@ -199,7 +195,7 @@ export const SchedulePage: React.FC = () => {
                 key={danceClass.id}
                 danceClass={danceClass}
                 onBook={handleBook}
-                isBooked={isClassBooked(danceClass.id)}
+                isBooked={false}
                 isAdmin={user?.role === 'admin'}
               />
             ))}
@@ -259,6 +255,7 @@ export const SchedulePage: React.FC = () => {
             setSelectedClass(null);
           }}
           onSuccess={handleBookingSuccess}
+          myBookings={myBookings || []}
         />
       )}
     </div>

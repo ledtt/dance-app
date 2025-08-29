@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { DanceClass } from '@/types';
+import { DanceClass, Booking } from '@/types';
 import { WEEKDAYS } from '@/types';
 import { X, Calendar, Clock, User, Users } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
@@ -12,6 +12,7 @@ interface BookingModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    myBookings: Booking[];
 }
 
 interface BookingFormData {
@@ -23,6 +24,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     isOpen,
     onClose,
     onSuccess,
+    myBookings,
 }) => {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -34,14 +36,6 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     } = useForm<BookingFormData>();
 
     const selectedDate = watch('date');
-
-    const getWeekdayName = (weekday: number) => {
-        return WEEKDAYS[weekday as keyof typeof WEEKDAYS] || 'Unknown';
-    };
-
-    const formatTime = (time: string) => {
-        return time ? time.substring(0, 5) : 'N/A';
-    };
 
     // Generate available dates for the next 4 weeks
     const generateAvailableDates = () => {
@@ -59,6 +53,21 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     };
 
     const availableDates = generateAvailableDates();
+
+    // Check if a date is already booked
+    const isDateBooked = (date: string) => {
+        return myBookings.some(booking =>
+            booking.class_id === danceClass.id && booking.date === date
+        );
+    };
+
+    const getWeekdayName = (weekday: number) => {
+        return WEEKDAYS[weekday as keyof typeof WEEKDAYS] || 'Unknown';
+    };
+
+    const formatTime = (time: string) => {
+        return time ? time.substring(0, 5) : 'N/A';
+    };
 
     const onSubmit = async (data: BookingFormData) => {
         setIsLoading(true);
@@ -135,11 +144,20 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                 className="input-field"
                             >
                                 <option value="">Select date...</option>
-                                {availableDates.map((date) => (
-                                    <option key={date.toISOString()} value={format(date, 'yyyy-MM-dd')}>
-                                        {format(date, 'EEEE, MMMM d, yyyy')}
-                                    </option>
-                                ))}
+                                {availableDates.map((date) => {
+                                    const dateString = format(date, 'yyyy-MM-dd');
+                                    const isBooked = isDateBooked(dateString);
+                                    return (
+                                        <option
+                                            key={date.toISOString()}
+                                            value={dateString}
+                                            disabled={isBooked}
+                                        >
+                                            {format(date, 'EEEE, MMMM d, yyyy')}
+                                            {isBooked ? ' (Already booked)' : ''}
+                                        </option>
+                                    );
+                                })}
                             </select>
                             {errors.date && (
                                 <p className="mt-1 text-sm text-red-600">{errors.date.message}</p>
@@ -151,6 +169,11 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                                 <p className="text-sm text-blue-800">
                                     You selected: {format(new Date(selectedDate), 'EEEE, MMMM d, yyyy')}
                                 </p>
+                                {selectedDate && isDateBooked(selectedDate) && (
+                                    <p className="text-sm text-red-600 mt-1">
+                                        ⚠️ You are already booked for this class on this date
+                                    </p>
+                                )}
                             </div>
                         )}
 
@@ -164,8 +187,8 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                             </button>
                             <button
                                 type="submit"
-                                disabled={isLoading || !selectedDate}
-                                className="btn-primary flex-1"
+                                disabled={isLoading || !selectedDate || (selectedDate !== "" && isDateBooked(selectedDate))}
+                                className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {isLoading ? (
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

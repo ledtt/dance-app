@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { User, Calendar, BookOpen, TrendingUp, Plus, X, Clock, Users, Edit } from 'lucide-react';
+import { User, Calendar, BookOpen, TrendingUp, Plus, X, Clock, Users, Edit, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 
 interface UserDetailsProps {
     user: any;
@@ -41,10 +41,11 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
         { id: 'statistics', label: 'Statistics', icon: TrendingUp },
     ];
 
-    // Calculate statistics
+    // Calculate statistics using status from backend
     const totalBookings = bookings.length;
-    const confirmedBookings = bookings.filter(b => b.status === 'confirmed').length;
+    const activeBookings = bookings.filter(b => b.status === 'active').length;
     const cancelledBookings = bookings.filter(b => b.status === 'cancelled').length;
+    const completedBookings = bookings.filter(b => b.status === 'completed').length;
     const upcomingBookings = bookings.filter(b => new Date(b.date) > new Date()).length;
 
     const mostBookedClass = bookings.reduce((acc, booking) => {
@@ -58,7 +59,7 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
 
     console.log('UserDetails - Statistics:', {
         totalBookings,
-        confirmedBookings,
+        activeBookings,
         cancelledBookings,
         upcomingBookings,
         favoriteClass
@@ -187,7 +188,7 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
                                         <div className="flex justify-between">
                                             <span className="text-gray-600">Member since:</span>
                                             <span className="font-medium">
-                                                {format(new Date(user.created_at), 'd MMM yyyy', { locale: ru })}
+                                                {format(new Date(user.created_at), 'd MMM yyyy', { locale: enUS })}
                                             </span>
                                         </div>
                                     </div>
@@ -235,7 +236,7 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
                                                         {booking.class_info?.name || 'Unknown Class'}
                                                     </div>
                                                     <div className="text-sm text-gray-600">
-                                                        {booking.class_info?.teacher} • {format(new Date(booking.date), 'd MMM yyyy', { locale: ru })}
+                                                        {booking.class_info?.teacher} • {format(new Date(booking.date), 'd MMM yyyy', { locale: enUS })}
                                                     </div>
                                                 </div>
                                                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
@@ -279,26 +280,42 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
-                                                {bookings.map((booking) => (
-                                                    <tr key={booking.id}>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="text-sm font-medium text-gray-900">
-                                                                {booking.class_info?.name || 'Unknown'}
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            {booking.class_info?.teacher || 'Unknown'}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            {format(new Date(booking.date), 'd MMMM yyyy', { locale: ru })}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                                Confirmed
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                {bookings.map((booking) => {
+                                                    const status = (booking.status || 'active') as 'active' | 'cancelled' | 'completed';
+                                                    const statusConfig = {
+                                                        active: { text: 'Active', bgColor: 'bg-green-100', textColor: 'text-green-800' },
+                                                        cancelled: { text: 'Cancelled', bgColor: 'bg-red-100', textColor: 'text-red-800' },
+                                                        completed: { text: 'Completed', bgColor: 'bg-blue-100', textColor: 'text-blue-800' }
+                                                    };
+
+                                                    // Safe access to status config
+                                                    const currentStatus = statusConfig[status] || statusConfig.active;
+
+                                                    return (
+                                                        <tr key={booking.id}>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="text-sm font-medium text-gray-900">
+                                                                    {booking.class_info?.name || 'Unknown'}
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                                {booking.class_info?.teacher || 'Unknown'}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                                {format(new Date(booking.date), 'd MMMM yyyy', { locale: enUS })} at{' '}
+                                                                {booking.class_info?.start_time ?
+                                                                    format(new Date(`2000-01-01T${booking.class_info.start_time}`), 'HH:mm') :
+                                                                    'Unknown'
+                                                                }
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentStatus.bgColor} ${currentStatus.textColor}`}>
+                                                                    {currentStatus.text}
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
                                             </tbody>
                                         </table>
                                     </div>
@@ -339,8 +356,8 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
                                             <Calendar className="h-6 w-6 text-green-600" />
                                         </div>
                                         <div className="ml-4">
-                                            <p className="text-sm font-medium text-gray-600">Confirmed</p>
-                                            <p className="text-2xl font-bold text-gray-900">{confirmedBookings}</p>
+                                            <p className="text-sm font-medium text-gray-600">Active</p>
+                                            <p className="text-2xl font-bold text-gray-900">{activeBookings}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -365,6 +382,18 @@ export const UserDetails: React.FC<UserDetailsProps> = ({
                                         <div className="ml-4">
                                             <p className="text-sm font-medium text-gray-600">Upcoming</p>
                                             <p className="text-2xl font-bold text-gray-900">{upcomingBookings}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="card">
+                                    <div className="flex items-center">
+                                        <div className="p-3 rounded-lg bg-blue-100">
+                                            <CheckCircle className="h-6 w-6 text-blue-600" />
+                                        </div>
+                                        <div className="ml-4">
+                                            <p className="text-sm font-medium text-gray-600">Completed</p>
+                                            <p className="text-2xl font-bold text-gray-900">{completedBookings}</p>
                                         </div>
                                     </div>
                                 </div>

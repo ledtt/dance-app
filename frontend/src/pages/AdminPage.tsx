@@ -18,7 +18,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale';
 import toast from 'react-hot-toast';
 import { ClassesByDay } from '@/components/admin/ClassesByDay';
 import { BookingFilters, BookingFilters as BookingFiltersType } from '@/components/admin/BookingFilters';
@@ -517,10 +517,10 @@ export const AdminPage: React.FC = () => {
                           Teacher
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
+                          Class Date & Time
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Time
+                          Booking Date & Time
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           Status
@@ -533,6 +533,17 @@ export const AdminPage: React.FC = () => {
                         console.log('Booking data:', booking);
                         console.log('User data:', booking.user);
                         console.log('Class info:', booking.class_info);
+
+                        // Use status from backend
+                        const status = (booking.status || 'active') as 'active' | 'cancelled' | 'completed';
+                        const statusConfig = {
+                          active: { text: 'Active', bgColor: 'bg-green-100', textColor: 'text-green-800' },
+                          cancelled: { text: 'Cancelled', bgColor: 'bg-red-100', textColor: 'text-red-800' },
+                          completed: { text: 'Completed', bgColor: 'bg-blue-100', textColor: 'text-blue-800' }
+                        };
+
+                        // Safe access to status config
+                        const currentStatus = statusConfig[status] || statusConfig.active;
 
                         return (
                           <tr key={booking.id} className="hover:bg-gray-50">
@@ -555,17 +566,18 @@ export const AdminPage: React.FC = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {format(new Date(booking.date), 'd MMMM yyyy', { locale: ru })}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {format(new Date(booking.date), 'd MMMM yyyy', { locale: enUS })} at{' '}
                               {booking.class_info?.start_time ?
                                 format(new Date(`2000-01-01T${booking.class_info.start_time}`), 'HH:mm') :
                                 'Unknown'
                               }
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {format(new Date(booking.created_at), 'd MMMM yyyy HH:mm', { locale: enUS })}
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Confirmed
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${currentStatus.bgColor} ${currentStatus.textColor}`}>
+                                {currentStatus.text}
                               </span>
                             </td>
                           </tr>
@@ -653,7 +665,7 @@ export const AdminPage: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {format(new Date(user.created_at), 'd MMM yyyy', { locale: ru })}
+                            {format(new Date(user.created_at), 'd MMM yyyy', { locale: enUS })}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex space-x-2">
