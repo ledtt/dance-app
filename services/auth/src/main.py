@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import FastAPI, Depends, HTTPException, status, Request, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Request, Query, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,6 +25,7 @@ from .crud import create_user, get_user_by_email, get_user_by_id, update_user, g
 from .schemas import UserCreate, UserOut, Token, UserUpdate, PasswordChange, UserRoleUpdate
 from shared.schemas import PaginatedResponse
 from .config import settings
+from .admin_setup import create_default_admin
 
 # Configure structured logging
 structlog.configure(
@@ -70,6 +71,11 @@ def conditional_rate_limit(limit_string: str):
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     await init_db()
+    
+    # Create default admin user if enabled
+    if settings.auto_create_admin:
+        await create_default_admin()
+    
     yield
 
 app = FastAPI(
@@ -99,6 +105,13 @@ app.add_middleware(
     allowed_hosts=settings.allowed_hosts
 )
 
+# Create router with prefix for all auth endpoints
+auth_router = APIRouter(
+    prefix="/api/auth",
+    tags=["auth"]
+)
+
+# Health check endpoint (no prefix needed)
 @app.get("/health")
 async def health_check():
     """Health check endpoint for AWS monitoring"""
@@ -109,12 +122,12 @@ async def health_check():
         "version": "1.0.0"
     }
 
-@app.post(
+# Auth endpoints with router prefix
+@auth_router.post(
     "/register",
     response_model=UserOut,
     status_code=status.HTTP_201_CREATED,
     summary="Register new user",
-    tags=["auth"],
 )
 @conditional_rate_limit(settings.rate_limit_register)
 async def register(
@@ -135,11 +148,10 @@ async def register(
     return UserOut.model_validate(user)
 
 
-@app.post(
+@auth_router.post(
     "/login",
     response_model=Token,
     summary="Get JWT token",
-    tags=["auth"],
 )
 @conditional_rate_limit(settings.rate_limit_login)
 async def login(
@@ -167,12 +179,10 @@ async def login(
     logger.info("JWT issued successfully", user_id=str(user.id), role=user_role)
     return Token(access_token=token, token_type="bearer", expires_in=expires_in)
 
-
-@app.post(
-    "/auth/internal/service-token",
+@auth_router.post(
+    "/internal/service-token",
     response_model=Token,
     summary="Get service JWT token",
-    tags=["internal"],
 )
 async def get_service_token(
     service_name: str,
@@ -203,11 +213,10 @@ async def get_service_token(
     )
 
 
-@app.get(
+@auth_router.get(
     "/me",
     response_model=UserOut,
     summary="Current user information",
-    tags=["auth"],
 )
 async def read_current_user(
     current_user=Depends(get_current_user),
@@ -221,11 +230,10 @@ async def read_current_user(
     
     return UserOut(**user_data)
 
-@app.put(
+@auth_router.put(
     "/me",
     response_model=UserOut,
     summary="Update current user profile",
-    tags=["auth"],
 )
 async def update_current_user(
     user_update: UserUpdate,
@@ -245,11 +253,10 @@ async def update_current_user(
     
     return UserOut(**user_data)
 
-@app.post(
+@auth_router.post(
     "/me/change-password",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Change current user password",
-    tags=["auth"],
 )
 async def change_password(
     password_data: PasswordChange,
@@ -269,7 +276,7 @@ async def change_password(
     await change_user_password(db, current_user.id, password_data.new_password)
     logger.info("Password changed successfully", user_id=str(current_user.id))
 
-@app.get(
+@auth_router.get(
     "/admin/users",
     response_model=PaginatedResponse[UserOut],
     summary="Get all users (admin only)",
@@ -303,7 +310,7 @@ async def get_users(
     logger.info("Users retrieved by admin", admin_id=str(current_user.id), count=len(result), total=total_count)
     return create_paginated_response(result, total_count, page, size)
 
-@app.put(
+@auth_router.put(
     "/admin/users/{user_id}/role",
     response_model=UserOut,
     summary="Update user role (admin only)",
@@ -323,7 +330,7 @@ async def set_user_role(
     logger.info("User role updated by admin", admin_id=str(current_user.id), user_id=str(user_id), new_role=role_update.role)
     return UserOut.model_validate(updated_user)
 
-@app.get(
+@auth_router.get(
     "/admin/users/{user_id}",
     response_model=UserOut,
     summary="Get user by ID (admin only)",
@@ -354,11 +361,10 @@ async def get_user_by_id_endpoint(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
 
 
-@app.get(
+@auth_router.get(
     "/internal/users/{user_id}",
     response_model=UserOut,
     summary="Get user by ID (internal service use)",
-    tags=["internal"],
 )
 async def get_user_by_id_internal(
     user_id: str,
@@ -387,3 +393,6 @@ async def get_user_by_id_internal(
     except Exception as e:
         logger.error("Error getting user by ID (internal)", error=str(e), user_id=user_id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Internal server error")
+
+# Include the auth router
+app.include_router(auth_router)

@@ -6,7 +6,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 
 import os
-from fastapi import FastAPI, Depends, Query, HTTPException, status
+from fastapi import FastAPI, Depends, Query, HTTPException, status, APIRouter
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import get_db, init_db
@@ -79,6 +79,13 @@ app.add_middleware(
     allowed_hosts=settings.allowed_hosts
 )
 
+# Create router with prefix for all schedule endpoints
+schedule_router = APIRouter(
+    prefix="/api/schedule",
+    tags=["schedule"]
+)
+
+# Health check endpoint (no prefix needed)
 @app.get("/health")
 async def health_check():
     """Health check endpoint for AWS monitoring"""
@@ -89,7 +96,8 @@ async def health_check():
         "version": "1.0.0"
     }
 
-@app.get("/schedule", response_model=PaginatedResponse[ClassOut])
+# Schedule endpoints with router prefix
+@schedule_router.get("/schedule", response_model=PaginatedResponse[ClassOut])
 async def list_schedule(
     teacher_id: Optional[int] = Query(None, description="Filter by teacher ID"),
     teacher: Optional[str] = Query(None, description="Filter by teacher name"),
@@ -150,7 +158,7 @@ async def list_schedule(
         logger.error("Error retrieving schedule", error=str(e))
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.get("/schedule/ids", response_model=List[str])
+@schedule_router.get("/schedule/ids", response_model=List[str])
 async def get_class_ids(
     teacher: Optional[str] = Query(None, description="Filter by teacher name"),
     name: Optional[str] = Query(None, description="Filter by class name"),
@@ -193,7 +201,7 @@ async def get_class_ids(
         logger.error("Error retrieving class IDs", error=str(e))
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.post("/schedule", response_model=ClassOut, status_code=201)
+@schedule_router.post("/schedule", response_model=ClassOut, status_code=201)
 async def add_class(
     class_data: ClassCreate, 
     db: AsyncSession = Depends(get_db),
@@ -211,7 +219,7 @@ async def add_class(
         logger.error("Error creating class", error=str(e))
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.get("/schedule/statistics")
+@schedule_router.get("/schedule/statistics")
 async def get_schedule_statistics(db: AsyncSession = Depends(get_db)):
     """Get schedule statistics for admin dashboard"""
     try:
@@ -222,7 +230,7 @@ async def get_schedule_statistics(db: AsyncSession = Depends(get_db)):
         logger.error("Error retrieving schedule statistics", error=str(e))
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.get("/schedule/{class_id}", response_model=ClassOut)
+@schedule_router.get("/schedule/{class_id}", response_model=ClassOut)
 async def get_class(
     class_id: UUID, 
     db: AsyncSession = Depends(get_db),
@@ -243,7 +251,7 @@ async def get_class(
         logger.error("Error retrieving class template", error=str(e), class_id=str(class_id))
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.put("/schedule/{class_id}", response_model=ClassOut)
+@schedule_router.put("/schedule/{class_id}", response_model=ClassOut)
 async def update_class_endpoint(
     class_id: UUID, 
     class_data: ClassCreate, 
@@ -264,7 +272,7 @@ async def update_class_endpoint(
         logger.error("Error updating class", error=str(e), class_id=str(class_id))
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.delete("/schedule/{class_id}")
+@schedule_router.delete("/schedule/{class_id}")
 async def delete_class_endpoint(
     class_id: UUID, 
     db: AsyncSession = Depends(get_db),
@@ -281,7 +289,7 @@ async def delete_class_endpoint(
         logger.error("Error deleting class", error=str(e), class_id=str(class_id))
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.get("/schedule/teacher/{teacher_name}", response_model=List[ClassOut], deprecated=True)
+@schedule_router.get("/schedule/teacher/{teacher_name}", response_model=List[ClassOut], deprecated=True)
 async def get_classes_by_teacher_endpoint(
     teacher_name: str,
     db: AsyncSession = Depends(get_db),
@@ -297,7 +305,7 @@ async def get_classes_by_teacher_endpoint(
         logger.error("Error retrieving classes by teacher", error=str(e), teacher=teacher_name)
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
 
-@app.get("/schedule/weekday/{weekday}", response_model=List[ClassOut], deprecated=True)
+@schedule_router.get("/schedule/weekday/{weekday}", response_model=List[ClassOut], deprecated=True)
 async def get_classes_by_weekday_endpoint(
     weekday: int,
     db: AsyncSession = Depends(get_db),
@@ -318,3 +326,6 @@ async def get_classes_by_weekday_endpoint(
     except Exception as e:
         logger.error("Error retrieving classes by weekday", error=str(e), weekday=weekday)
         raise HTTPException(status_code=500, detail=ERROR_MESSAGES["internal_error"]) from e
+
+# Include the schedule router
+app.include_router(schedule_router)

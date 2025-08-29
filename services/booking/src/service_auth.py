@@ -87,7 +87,7 @@ class ServiceTokenManager:
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 headers = {"Authorization": f"Bearer {settings.internal_auth_token}"}
-                url = f"{settings.auth_service_url}/auth/internal/service-token"
+                url = f"{settings.auth_service_url}/api/auth/internal/service-token"
                 logger.info(f"Making request to: {url}")
                 logger.info(f"Headers: {headers}")
                 logger.info(f"Params: service_name={self._service_name}")
