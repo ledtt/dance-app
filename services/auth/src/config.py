@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     service_token_expire_minutes: int = Field(default=5, alias="SERVICE_TOKEN_EXPIRE_MINUTES")
     service_jwt_secret: str = Field(default="", alias="SERVICE_JWT_SECRET")
     
+    # Admin user configuration
+    admin_email: str = Field(..., alias="ADMIN_EMAIL")
+    admin_password: str = Field(..., alias="ADMIN_PASSWORD")
+    auto_create_admin: bool = Field(default=True, alias="AUTO_CREATE_ADMIN")
+    
     @field_validator('service_jwt_secret')
     @classmethod
     def validate_service_jwt_secret(cls, v: str) -> str:
