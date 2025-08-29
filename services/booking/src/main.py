@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_
 from typing import List, Optional
 
 from .db import get_db, init_db
@@ -21,6 +22,7 @@ from .crud import (
     get_booking_by_id,
     get_bookings_by_class,
     get_booking_statistics,
+    update_booking_statuses,
 )
 from .external_schedule import get_class_template_by_id
 from shared.exceptions import BookingError, ResourceNotFoundError, CapacityExceededError
@@ -108,6 +110,9 @@ async def my_bookings(
 ):
     """Get all bookings for the current user"""
     try:
+        # Update booking statuses based on current time
+        await update_booking_statuses(db)
+        
         bookings = await get_bookings_for_user(db, current_user.id)
         logger.info("Retrieved user bookings", user_id=current_user.id, count=len(bookings))
         return bookings
@@ -125,6 +130,10 @@ async def cancel_my_booking(
     """Cancel a booking for the current user"""
     try:
         await cancel_booking(db, booking_id, UUID(current_user.id))
+        
+        # Update booking statuses after cancellation
+        await update_booking_statuses(db)
+        
         logger.info("Booking cancelled successfully", booking_id=str(booking_id), user_id=current_user.id)
         return {"message": SUCCESS_MESSAGES["booking_cancelled"]}
     except ResourceNotFoundError:
@@ -188,6 +197,9 @@ async def admin_get_all_bookings(
 ):
     """Get all bookings with optional filtering and pagination (admin only)"""
     try:
+        # Update booking statuses based on current time
+        await update_booking_statuses(db)
+        
         # Calculate offset from page and size
         offset = (page - 1) * size
         

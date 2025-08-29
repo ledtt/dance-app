@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     
     # Security settings
     cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="CORS_ORIGINS")
-    trusted_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="TRUSTED_HOSTS")
+    allowed_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="ALLOWED_HOSTS")
     
     # Rate limiting
     rate_limit_login: str = Field(default="5/minute", alias="RATE_LIMIT_LOGIN")

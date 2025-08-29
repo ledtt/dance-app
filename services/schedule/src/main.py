@@ -7,12 +7,12 @@ from datetime import datetime, timezone
 
 import os
 from fastapi import FastAPI, Depends, Query, HTTPException, status
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .db import get_db, init_db
 from .schemas import ClassCreate, ClassOut
 from shared.schemas import PaginatedResponse
+from shared.middleware import CustomTrustedHostMiddleware
 from .crud import (
     get_schedule, 
     get_classes_by_filter, 
@@ -27,6 +27,7 @@ from .crud import (
 from .auth import get_current_admin_user, verify_service_token, UserInToken
 from shared.exceptions import ResourceNotFoundError, ValidationError
 from shared.constants import ERROR_MESSAGES, SUCCESS_MESSAGES, WeekDay
+from .config import settings
 
 # Configure structured logging
 structlog.configure(
@@ -72,13 +73,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add trusted host middleware
-allowed_hosts_str = os.getenv("ALLOWED_HOSTS", "localhost")
-allowed_hosts = [host.strip() for host in allowed_hosts_str.split(',')]
-
+# Add custom trusted host middleware (excludes health endpoint from validation)
 app.add_middleware(
-    TrustedHostMiddleware, 
-    allowed_hosts=allowed_hosts
+    CustomTrustedHostMiddleware,
+    allowed_hosts=settings.allowed_hosts
 )
 
 @app.get("/health")

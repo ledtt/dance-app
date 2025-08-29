@@ -5,6 +5,7 @@ import httpx
 import structlog
 from typing import Union, Optional
 from .service_auth import service_token_manager
+from .config import settings
 
 logger = structlog.get_logger()
 
@@ -14,9 +15,9 @@ async def get_class_template_by_id(class_id: str) -> Union[dict, None]:
         # Get service token
         service_token = await service_token_manager.get_service_token()
         
-        async with httpx.AsyncClient(timeout=15.0) as client:  # Увеличиваем таймаут до 15 секунд
+        async with httpx.AsyncClient(timeout=15.0) as client: 
             headers = {"Authorization": f"Bearer {service_token}"}
-            resp = await client.get(f"http://schedule-service:8000/schedule/{class_id}", headers=headers)
+            resp = await client.get(f"{settings.schedule_service_url}/schedule/{class_id}", headers=headers)
             
             if resp.status_code == 200:
                 try:
@@ -54,7 +55,7 @@ async def get_user_by_id(user_id: str) -> Union[dict, None]:
         
         async with httpx.AsyncClient(timeout=15.0) as client:
             headers = {"Authorization": f"Bearer {service_token}"}
-            resp = await client.get(f"http://auth-service:8000/auth/internal/users/{user_id}", headers=headers)
+            resp = await client.get(f"{settings.auth_service_url}/auth/internal/users/{user_id}", headers=headers)
             
             if resp.status_code == 200:
                 try:
@@ -103,10 +104,10 @@ async def get_class_ids_by_filter(teacher: Optional[str] = None, name: Optional[
             
             headers = {"Authorization": f"Bearer {service_token}"}
             logger.info("Making request to schedule service", 
-                       url="http://schedule-service:8000/schedule/ids",
+                       url=f"{settings.schedule_service_url}/schedule/ids",
                        params=params, headers_keys=list(headers.keys()))
             
-            resp = await client.get("http://schedule-service:8000/schedule/ids", params=params, headers=headers)
+            resp = await client.get(f"{settings.schedule_service_url}/schedule/ids", params=params, headers=headers)
             
             logger.info("Response received from schedule service", 
                        status_code=resp.status_code, 

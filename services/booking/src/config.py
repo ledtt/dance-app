@@ -14,13 +14,17 @@ class Settings(BaseSettings):
     schedule_service_url: str = Field(..., alias="SCHEDULE_SERVICE_URL")
     auth_service_url: str = Field(..., alias="AUTH_SERVICE_URL")
     
+    # Security settings
+    cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="CORS_ORIGINS")
+    allowed_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="ALLOWED_HOSTS")
+    
     # Internal service authentication
     internal_auth_token: str = Field(default="internal-secret-token", alias="INTERNAL_AUTH_TOKEN")
     
     # Service JWT configuration
     service_token_expire_minutes: int = Field(default=5, alias="SERVICE_TOKEN_EXPIRE_MINUTES")
     service_jwt_secret: str = Field(default="", alias="SERVICE_JWT_SECRET")
-
+    
     model_config = SettingsConfigDict(
         env_file=os.getenv("ENV_FILE", ".env"),
         env_file_encoding="utf-8",

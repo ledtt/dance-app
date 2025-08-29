@@ -12,7 +12,6 @@ from uuid import UUID
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -20,6 +19,7 @@ from slowapi.errors import RateLimitExceeded
 
 from .auth import authenticate_user, create_access_token, create_service_token, get_current_user, get_current_admin_user, verify_service_token_dependency, oauth2_scheme
 from shared.auth import verify_password
+from shared.middleware import CustomTrustedHostMiddleware
 from .db import get_db, init_db
 from .crud import create_user, get_user_by_email, get_user_by_id, update_user, get_all_users, change_user_password, update_user_role, get_users_count
 from .schemas import UserCreate, UserOut, Token, UserUpdate, PasswordChange, UserRoleUpdate
@@ -93,13 +93,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add trusted host middleware
-allowed_hosts_str = os.getenv("ALLOWED_HOSTS", "localhost")
-allowed_hosts = [host.strip() for host in allowed_hosts_str.split(',')]
-
+# Add custom trusted host middleware (excludes health endpoint from validation)
 app.add_middleware(
-    TrustedHostMiddleware, 
-    allowed_hosts=allowed_hosts
+    CustomTrustedHostMiddleware,
+    allowed_hosts=settings.allowed_hosts
 )
 
 @app.get("/health")
