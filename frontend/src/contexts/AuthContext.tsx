@@ -59,9 +59,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             localStorage.setItem('user', JSON.stringify(userData));
 
             toast.success('Login successful!');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Login error:', error);
-            toast.error('Login error. Please check your email and password.');
+
+            if (error.response?.status === 401) {
+                toast.error('Invalid email or password. Please try again.');
+            } else if (error.response?.status === 429) {
+                toast.error('Too many login attempts. Please wait a moment.');
+            } else {
+                toast.error('Login failed. Please check your connection and try again.');
+            }
+
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
         }
     };
 
