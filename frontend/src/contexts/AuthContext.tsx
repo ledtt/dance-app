@@ -63,11 +63,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             console.error('Login error:', error);
 
             if (error.response?.status === 401) {
-                toast.error('Invalid email or password. Please try again.');
+                toast.error('Invalid email or password. Please try again.', {
+                    duration: 4000, // 4 seconds
+                    position: 'top-center',
+                });
             } else if (error.response?.status === 429) {
-                toast.error('Too many login attempts. Please wait a moment.');
+                toast.error('Too many login attempts. Please wait a moment.', {
+                    duration: 4000,
+                    position: 'top-center',
+                });
             } else {
-                toast.error('Login failed. Please check your connection and try again.');
+                toast.error('Login failed. Please check your connection and try again.', {
+                    duration: 4000,
+                    position: 'top-center',
+                });
             }
 
             localStorage.removeItem('token');
