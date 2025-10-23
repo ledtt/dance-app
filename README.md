@@ -1,6 +1,6 @@
 # Dance App - Full Stack Application
 
-A modern dance class booking system built with FastAPI microservices backend and React frontend.
+A dance class booking system built with FastAPI microservices backend and React frontend.
 
 ## 🏗️ Architecture Overview
 
@@ -93,68 +93,133 @@ dance-app/
 ├── tests/                 # Test suite
 │   └── unit/              # Unit tests
 │       ├── __init__.py
+│       ├── conftest.py    # Test configuration and fixtures
 │       ├── requirements.txt
-│       ├── test_auth_service.py
-│       ├── test_booking_service.py
-│       └── test_schedule_service.py
-
-├── docker-compose.yml     # Main Docker configuration
+│       ├── auth/
+│       │   └── test_auth_service.py
+│       ├── booking/
+│       │   └── test_booking_service.py
+│       └── schedule/
+│           └── test_schedule_service.py
+├── postgres-config/       # PostgreSQL configuration
+│   └── postgresql.conf
+├── docker-compose.yml     # Local development Docker configuration
 ├── requirements-admin.txt  # Admin dependencies
 ├── create_admin.py        # Admin user creation script
+├── entrypoint.sh          # Docker entrypoint script
+├── .env.example           
 └── README.md              # Documentation
+```
+
+## 🚀 Local Development Setup
+
+This project uses Docker Compose for local development and testing. All services are containerized and configured to work together.
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Environment variables configured (see `.env.example`)
+
+### Quick Start
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd dance-app
+   ```
+
+2. **Set up environment variables**
+   ```bash
+   # Create .env file with your configuration
+   # See docker-compose.yml for required environment variables
+   ```
+
+3. **Start all services with Docker Compose**
+   ```bash
+   docker-compose up --build
+   ```
+
+4. **Access the application locally**
+   - Frontend: http://localhost (port 80)
+   - Auth Service: http://localhost:8001
+   - Schedule Service: http://localhost:8002
+   - Booking Service: http://localhost:8003
+   - PostgreSQL: localhost:5432
+
+### Development Commands
+
+```bash
+# Start services in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop all services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up --build
+
+# Run tests
+docker-compose exec auth-service python -m pytest tests/unit
 ```
 
 ## 📚 API Documentation
 
-### Authentication Service (Port 8001)
+### Authentication Service
 
 #### Endpoints
-- `POST /register` - Register new user
-- `POST /login` - User login
-- `GET /me` - Get current user info
-- `PUT /me` - Update current user profile
-- `POST /me/change-password` - Change current user password
-- `GET /admin/users` - Get all users (admin only)
-- `PUT /admin/users/{user_id}` - Update user by admin
-- `GET /users/{user_id}` - Get user by ID (admin only)
-- `POST /auth/internal/service-token` - Get service JWT token
-- `GET /internal/users/{user_id}` - Get user (internal use)
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/login` - User login
+- `GET /api/auth/me` - Get current user info
+- `PUT /api/auth/me` - Update current user profile
+- `POST /api/auth/me/change-password` - Change current user password
+- `GET /api/auth/admin/users` - Get all users (admin only)
+- `PUT /api/auth/admin/users/{user_id}/role` - Update user role (admin only)
+- `GET /api/auth/admin/users/{user_id}` - Get user by ID (admin only)
+- `POST /api/auth/internal/service-token` - Get service JWT token
+- `GET /api/auth/internal/users/{user_id}` - Get user (internal use)
+- `GET /health` - Health check
 
-### Schedule Service (Port 8002)
+### Schedule Service
 
 #### Endpoints
-- `GET /schedule` - Get all classes (with advanced filtering)
-- `POST /schedule` - Create new class (admin only)
-- `PUT /schedule/{class_id}` - Update class (admin only)
-- `DELETE /schedule/{class_id}` - Delete class (admin only)
-- `GET /schedule/{class_id}` - Get specific class
-- `GET /schedule/statistics` - Get schedule statistics
+- `GET /api/schedule/schedule` - Get all classes (with advanced filtering)
+- `POST /api/schedule/schedule` - Create new class (admin only)
+- `PUT /api/schedule/schedule/{class_id}` - Update class (admin only)
+- `DELETE /api/schedule/schedule/{class_id}` - Delete class (admin only)
+- `GET /api/schedule/schedule/{class_id}` - Get specific class
+- `GET /api/schedule/schedule/statistics` - Get schedule statistics
+- `GET /api/schedule/schedule/ids` - Get class IDs (internal use)
+- `GET /health` - Health check
 
 #### Advanced Filtering
-The main `/schedule` endpoint supports advanced filtering:
+The main `/api/schedule/schedule` endpoint supports advanced filtering:
 ```bash
 # Filter by weekday
-GET /schedule?weekday=1
+GET /api/schedule/schedule?weekday=1
 
 # Filter by teacher
-GET /schedule?teacher=Anna
+GET /api/schedule/schedule?teacher=Anna
 
 # Filter by active status
-GET /schedule?active=true
+GET /api/schedule/schedule?active=true
 
 # Combine filters
-GET /schedule?weekday=1&teacher=Anna&active=true
+GET /api/schedule/schedule?weekday=1&teacher=Anna&active=true
 
 # Pagination
-GET /schedule?limit=20&offset=0
+GET /api/schedule/schedule?page=1&size=20
 ```
-### Booking Service (Port 8003)
+### Booking Service
 
 #### Endpoints
-- `POST /book` - Book a class (authenticated users)
-- `GET /my-bookings` - Get user's bookings
-- `DELETE /bookings/{booking_id}` - Cancel booking
-- `GET /bookings/{booking_id}` - Get specific booking
-- `GET /admin/bookings` - Get all bookings (admin)
-- `POST /admin/bookings` - Create booking for any user (admin)
-- `GET /admin/statistics` - Get booking statistics (admin)
+- `POST /api/booking/book` - Book a class (authenticated users)
+- `GET /api/booking/my-bookings` - Get user's bookings
+- `DELETE /api/booking/bookings/{booking_id}` - Cancel booking
+- `GET /api/booking/bookings/{booking_id}` - Get specific booking
+- `GET /api/booking/admin/bookings` - Get all bookings (admin)
+- `POST /api/booking/admin/bookings` - Create booking for any user (admin)
+- `GET /api/booking/admin/statistics` - Get booking statistics (admin)
+- `GET /health` - Health check

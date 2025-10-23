@@ -22,11 +22,21 @@ frontend/
 │   │   └── client.ts          # API client
 │   ├── components/
 │   │   ├── admin/             # Admin components
+│   │   │   ├── BookingFilters.tsx
+│   │   │   ├── ClassesByDay.tsx
+│   │   │   └── UserDetails.tsx
 │   │   ├── auth/              # Authentication components
+│   │   │   ├── LoginForm.tsx
+│   │   │   └── RegisterForm.tsx
 │   │   ├── booking/           # Booking components
+│   │   │   └── BookingModal.tsx
 │   │   ├── common/            # Common components
+│   │   │   └── LoadingSpinner.tsx
 │   │   ├── layout/            # Layout components
+│   │   │   └── Navigation.tsx
 │   │   └── schedule/          # Schedule components
+│   │       ├── ScheduleCard.tsx
+│   │       └── ScheduleFilters.tsx
 │   ├── contexts/
 │   │   └── AuthContext.tsx    # Authentication context
 │   ├── pages/                 # Application pages
@@ -38,7 +48,9 @@ frontend/
 ├── package.json
 ├── vite.config.ts
 ├── tailwind.config.js
-└── tsconfig.json
+├── tsconfig.json
+├── Dockerfile               # Frontend container
+└── nginx.conf               # Nginx configuration
 ```
 
 ## 🛠️ Installation and Setup
@@ -47,21 +59,28 @@ frontend/
 
 - Node.js 18+
 - npm or yarn
+- Docker and Docker Compose (for full application)
 
-### Install Dependencies
+### Local Development (Standalone)
 
 ```bash
 cd frontend
 npm install
-```
-
-### Development Mode
-
-```bash
 npm run dev
 ```
 
 Application will be available at: http://localhost:3000
+
+### Docker Development (Recommended)
+
+The frontend is designed to work with the full Docker Compose setup:
+
+```bash
+# From project root
+docker-compose up --build
+```
+
+This will start all services including the frontend at http://localhost (port 80)
 
 ### Production Build
 
@@ -79,19 +98,23 @@ npm run preview
 
 ### API Proxy
 
-Configured in `vite.config.ts`:
+Configured in `vite.config.ts` for development:
 
-- `/api/auth` → `http://localhost:8001`
-- `/api/schedule` → `http://localhost:8002`
-- `/api/booking` → `http://localhost:8003`
+- `/api/auth` → `http://localhost:8001` (Auth Service)
+- `/api/schedule` → `http://localhost:8002` (Schedule Service)  
+- `/api/booking` → `http://localhost:8003` (Booking Service)
 
 ### Environment Variables
 
-Create `.env` file in frontend root:
+The frontend uses proxy configuration for API calls during development. In production, the API endpoints would be configured differently.
 
-```env
-VITE_API_BASE_URL=http://localhost:3000/api
-```
+### Docker Configuration
+
+The frontend is containerized with:
+- **Base Image**: Node.js Alpine
+- **Build Tool**: Vite
+- **Web Server**: Nginx (for production)
+- **Port**: 80 (in Docker), 3000 (standalone development)
 
 ## 📱 Features
 
