@@ -83,7 +83,7 @@ async def get_admin_count(db: AsyncSession) -> int:
     return result.scalar_one()
 
 
-async def create_user(db: AsyncSession, user_create: UserCreate) -> User:
+async def create_user(db: AsyncSession, user_create: UserCreate, is_admin: bool = False) -> User:
     raw_password = user_create.password.get_secret_value()
     hashed_pw = hash_password(raw_password)
 
@@ -91,12 +91,14 @@ async def create_user(db: AsyncSession, user_create: UserCreate) -> User:
         email=user_create.email,
         name=user_create.name,
         password_hash=hashed_pw,
+        role="admin" if is_admin else "user",
     )
     db.add(new_user)
     try:
         await db.commit()
         await db.refresh(new_user)
-        logger.info("User created: %s (id=%s)", new_user.email, new_user.id)
+        role_text = "admin" if is_admin else "user"
+        logger.info("User created: %s (id=%s, role=%s)", new_user.email, new_user.id, role_text)
     except IntegrityError as exc:
         await db.rollback()
         logger.warning("Registration failed, email exists: %s", user_create.email)

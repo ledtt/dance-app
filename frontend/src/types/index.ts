@@ -27,6 +27,7 @@ export interface Booking {
     class_id: string;
     date: string;
     created_at: string;
+    status?: 'active' | 'cancelled' | 'completed';
     class_info?: DanceClass;
     user?: User;
 }

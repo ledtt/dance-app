@@ -56,6 +56,13 @@ class Booking(Base):
         nullable=False,
     )
 
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default='active',
+        index=True,
+    )
+
 
 
     def __repr__(self) -> str:

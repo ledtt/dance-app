@@ -64,6 +64,7 @@ class BookingOut(BaseModel):
     date: datetime.date = Field(..., description="Class date")
     start_time: datetime.datetime = Field(..., description="Class start time")
     created_at: datetime.datetime = Field(..., description="Booking creation date")
+    status: str = Field(..., description="Booking status")
     class_info: Optional[ExternalClassOut] = Field(None, description="Class information")
     user: Optional[ExternalUserOut] = Field(None, description="User information")
 

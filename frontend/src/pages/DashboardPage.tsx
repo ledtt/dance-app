@@ -57,12 +57,24 @@ export const DashboardPage: React.FC = () => {
 
   // Check if user is booked for each class
   const isClassBooked = (classId: string) => {
-    return myBookings?.some(booking => booking.class_id === classId) || false;
+    const today = new Date();
+    const todayString = format(today, 'yyyy-MM-dd');
+
+    return myBookings?.some(booking =>
+      booking.class_id === classId && booking.date === todayString
+    ) || false;
   };
 
   // Check if class has available spots
   const getAvailableSpots = (danceClass: any) => {
-    const bookedCount = myBookings?.filter(booking => booking.class_id === danceClass.id).length || 0;
+    const today = new Date();
+    const todayString = format(today, 'yyyy-MM-dd');
+
+    const todaysBookings = myBookings?.filter(booking =>
+      booking.class_id === danceClass.id && booking.date === todayString
+    ) || [];
+
+    const bookedCount = todaysBookings.length;
     return Math.max(0, danceClass.capacity - bookedCount);
   };
 

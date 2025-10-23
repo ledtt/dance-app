@@ -49,6 +49,11 @@ export const BookingsPage: React.FC = () => {
   };
 
   const isUpcoming = (booking: Booking) => {
+    // Если бронирование отменено, оно не может быть upcoming
+    if (booking.status === 'cancelled') {
+      return false;
+    }
+
     const now = new Date();
     const bookingDate = new Date(booking.date);
 
@@ -71,13 +76,20 @@ export const BookingsPage: React.FC = () => {
   };
 
   const isToday = (booking: Booking) => {
+    // Если бронирование отменено, оно не может быть сегодняшним
+    if (booking.status === 'cancelled') {
+      return false;
+    }
+
     const now = new Date();
     const bookingDate = new Date(booking.date);
     return bookingDate.toDateString() === now.toDateString();
   };
 
+  // Группируем бронирования по статусу
   const upcomingBookings = bookings?.filter(booking => isUpcoming(booking)) || [];
-  const pastBookings = bookings?.filter(booking => !isUpcoming(booking)) || [];
+  const pastBookings = bookings?.filter(booking => !isUpcoming(booking) && booking.status !== 'cancelled') || [];
+  const cancelledBookings = bookings?.filter(booking => booking.status === 'cancelled') || [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -196,6 +208,53 @@ export const BookingsPage: React.FC = () => {
                       <div className="pt-4 border-t border-gray-200">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           Completed
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Cancelled Bookings */}
+            {cancelledBookings.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <Trash2 className="h-5 w-5 mr-2" />
+                  Cancelled bookings ({cancelledBookings.length})
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {cancelledBookings.map((booking) => (
+                    <div key={booking.id} className="card opacity-75">
+                      <div className="mb-4">
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {booking.class_info?.name || 'Class'}
+                        </h3>
+                        <div className="flex items-center text-gray-600 mt-1">
+                          <User className="h-4 w-4 mr-1" />
+                          <span className="text-sm">{booking.class_info?.teacher}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex items-center text-gray-600">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          <span className="text-sm">
+                            {format(new Date(booking.date), 'EEEE, d MMMM yyyy')}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center text-gray-600">
+                          <Clock className="h-4 w-4 mr-2" />
+                          <span className="text-sm">
+                            {booking.class_info?.start_time ? formatTime(booking.class_info.start_time) : 'Time not specified'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-gray-200">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Cancelled
                         </span>
                       </div>
                     </div>

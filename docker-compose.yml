@@ -3,14 +3,16 @@ services:
   postgres:
     image: postgres:15
     container_name: dance-postgres-local
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8 --lc-collate=C --lc-ctype=C --auth-host=scram-sha-256 --auth-local=scram-sha-256
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./aws-config/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./postgres-config/postgresql.conf:/etc/postgresql/postgresql.conf
     ports:
       - "5432:5432"
     healthcheck:
@@ -28,7 +30,10 @@ services:
       dockerfile: services/auth/Dockerfile
     container_name: dance-auth-service-local
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_ENDPOINT=${DB_ENDPOINT}
+      - DB_NAME=${POSTGRES_DB}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ALGORITHM=${JWT_ALGORITHM}
       - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
@@ -38,7 +43,9 @@ services:
       - RATE_LIMIT_REGISTER=${RATE_LIMIT_REGISTER}
       - SQLALCHEMY_ECHO=${SQLALCHEMY_ECHO}
       - TESTING_MODE=${TESTING_MODE}
-      - ADMIN_EMAILS=${ADMIN_EMAILS}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - AUTO_CREATE_ADMIN=${AUTO_CREATE_ADMIN}
       - INTERNAL_AUTH_TOKEN=${INTERNAL_AUTH_TOKEN}
       - SERVICE_TOKEN_EXPIRE_MINUTES=${SERVICE_TOKEN_EXPIRE_MINUTES}
       - SERVICE_JWT_SECRET=${SERVICE_JWT_SECRET}
@@ -63,7 +70,10 @@ services:
       dockerfile: services/schedule/Dockerfile
     container_name: dance-schedule-service-local
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_ENDPOINT=${DB_ENDPOINT}
+      - DB_NAME=${POSTGRES_DB}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ALGORITHM=${JWT_ALGORITHM}
       - CORS_ORIGINS=${CORS_ORIGINS}
@@ -93,7 +103,10 @@ services:
       dockerfile: services/booking/Dockerfile
     container_name: dance-booking-service-local
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_ENDPOINT=${DB_ENDPOINT}
+      - DB_NAME=${POSTGRES_DB}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_ALGORITHM=${JWT_ALGORITHM}
       - SCHEDULE_SERVICE_URL=${SCHEDULE_SERVICE_URL}
@@ -133,7 +146,7 @@ services:
       - schedule-service
       - booking-service
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
       timeout: 3s
       retries: 3

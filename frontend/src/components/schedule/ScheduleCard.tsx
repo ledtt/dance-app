@@ -90,15 +90,13 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
                 ) : (
                     <button
                         onClick={() => onBook?.(danceClass)}
-                        disabled={isBooked || !danceClass.active}
-                        className={`text-sm px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${isBooked
-                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                            : danceClass.active
-                                ? 'btn-primary'
-                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        disabled={!danceClass.active}
+                        className={`w-full text-sm px-4 py-2 rounded-lg font-medium transition-colors duration-200 ${danceClass.active
+                            ? 'btn-primary'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             }`}
                     >
-                        {isBooked ? 'Already booked' : 'Book'}
+                        {danceClass.active ? 'Book' : 'Class inactive'}
                     </button>
                 )}
             </div>

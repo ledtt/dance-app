@@ -49,15 +49,22 @@ class ApiClient {
                     localStorage.removeItem('user');
 
                     // Show user-friendly message about session expiration
-                    toast.error('Your session has expired. Please log in again.');
+                    toast.error('Your session has expired. Please log in again.', {
+                        duration: 4000, // 4 seconds
+                        position: 'top-center',
+                    });
 
-                    // Redirect to login page
-                    window.location.href = '/login';
+                    // Redirect to auth page with delay to allow toast to be visible
+                    setTimeout(() => {
+                        window.location.href = '/auth';
+                    }, 2000); // 2 seconds delay
                     return Promise.reject(error);
                 }
 
-                const message = error.response?.data?.detail || error.message || 'An error occurred';
-                toast.error(message);
+                if (error.response?.status !== 401) {
+                    const message = error.response?.data?.detail || error.message || 'An error occurred';
+                    toast.error(message);
+                }
 
                 return Promise.reject(error);
             }

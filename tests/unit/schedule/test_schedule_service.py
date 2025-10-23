@@ -1,13 +1,18 @@
 import pytest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 import sys
 import os
 from uuid import uuid4
 from datetime import datetime, time
 
-# Use absolute imports
-from services.schedule.src.schemas import ClassCreate, ClassOut
-from services.schedule.src.models import ClassTemplate
+# Mock all database and external dependencies before importing
+with patch('services.schedule.src.db.get_db'), \
+     patch('services.schedule.src.db.engine'), \
+     patch('sqlalchemy.ext.asyncio.create_async_engine'), \
+     patch('sqlalchemy.ext.asyncio.async_sessionmaker'):
+    
+    from services.schedule.src.schemas import ClassCreate, ClassOut
+    from services.schedule.src.models import ClassTemplate
 
 
 @pytest.fixture

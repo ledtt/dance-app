@@ -4,9 +4,10 @@ from uuid import UUID
 import structlog
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi import FastAPI, Depends, HTTPException, status, Query, APIRouter
 from fastapi.responses import HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_
 from typing import List, Optional
 
 from .db import get_db, init_db
@@ -21,6 +22,7 @@ from .crud import (
     get_booking_by_id,
     get_bookings_by_class,
     get_booking_statistics,
+    update_booking_statuses,
 )
 from .external_schedule import get_class_template_by_id
 from shared.exceptions import BookingError, ResourceNotFoundError, CapacityExceededError
@@ -70,6 +72,13 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Create router with prefix for all booking endpoints
+booking_router = APIRouter(
+    prefix="/api/booking",
+    tags=["booking"]
+)
+
+# Health check endpoint (no prefix needed)
 @app.get("/health")
 async def health_check():
     """Health check endpoint for AWS monitoring"""
@@ -80,9 +89,8 @@ async def health_check():
         "version": "1.0.0"
     }
 
-
-
-@app.post("/book", response_model=BookingOut, status_code=201)
+# Booking endpoints with router prefix
+@booking_router.post("/book", response_model=BookingOut, status_code=201)
 async def book_class(
     booking_in: BookingCreate,
     db: AsyncSession = Depends(get_db),
@@ -101,13 +109,16 @@ async def book_class(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES["internal_error"]) from e
 
 
-@app.get("/my-bookings", response_model=List[BookingOut])
+@booking_router.get("/my-bookings", response_model=List[BookingOut])
 async def my_bookings(
     db: AsyncSession = Depends(get_db),
     current_user: UserInToken = Depends(get_current_user),
 ):
     """Get all bookings for the current user"""
     try:
+        # Update booking statuses based on current time
+        await update_booking_statuses(db)
+        
         bookings = await get_bookings_for_user(db, current_user.id)
         logger.info("Retrieved user bookings", user_id=current_user.id, count=len(bookings))
         return bookings
@@ -116,7 +127,7 @@ async def my_bookings(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES["internal_error"]) from e
 
 
-@app.delete("/bookings/{booking_id}")
+@booking_router.delete("/bookings/{booking_id}")
 async def cancel_my_booking(
     booking_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -125,6 +136,10 @@ async def cancel_my_booking(
     """Cancel a booking for the current user"""
     try:
         await cancel_booking(db, booking_id, UUID(current_user.id))
+        
+        # Update booking statuses after cancellation
+        await update_booking_statuses(db)
+        
         logger.info("Booking cancelled successfully", booking_id=str(booking_id), user_id=current_user.id)
         return {"message": SUCCESS_MESSAGES["booking_cancelled"]}
     except ResourceNotFoundError:
@@ -134,7 +149,7 @@ async def cancel_my_booking(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES["internal_error"]) from e
 
 
-@app.get("/bookings/{booking_id}", response_model=BookingOut)
+@booking_router.get("/bookings/{booking_id}", response_model=BookingOut)
 async def get_booking(
     booking_id: UUID,
     db: AsyncSession = Depends(get_db),
@@ -154,7 +169,7 @@ async def get_booking(
 
 
 # Admin endpoints
-@app.post("/admin/bookings", response_model=BookingOut, status_code=201)
+@booking_router.post("/admin/bookings", response_model=BookingOut, status_code=201)
 async def admin_create_booking(
     booking_in: BookingCreate,
     db: AsyncSession = Depends(get_db),
@@ -173,7 +188,7 @@ async def admin_create_booking(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES["internal_error"]) from e
 
 
-@app.get("/admin/bookings", response_model=PaginatedResponse[BookingOut])
+@booking_router.get("/admin/bookings", response_model=PaginatedResponse[BookingOut])
 async def admin_get_all_bookings(
     db: AsyncSession = Depends(get_db),
     admin: UserInToken = Depends(get_current_admin_user),
@@ -188,6 +203,9 @@ async def admin_get_all_bookings(
 ):
     """Get all bookings with optional filtering and pagination (admin only)"""
     try:
+        # Update booking statuses based on current time
+        await update_booking_statuses(db)
+        
         # Calculate offset from page and size
         offset = (page - 1) * size
         
@@ -245,7 +263,7 @@ async def admin_get_all_bookings(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES["internal_error"]) from e
 
 
-@app.get("/admin/statistics")
+@booking_router.get("/admin/statistics")
 async def admin_statistics(
     db: AsyncSession = Depends(get_db),
     admin: UserInToken = Depends(get_current_admin_user),
@@ -287,7 +305,7 @@ async def admin_statistics(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES["internal_error"]) from e
 
 
-@app.get("/admin/summary", response_class=HTMLResponse)
+@booking_router.get("/admin/summary", response_class=HTMLResponse)
 async def admin_summary(
     db: AsyncSession = Depends(get_db),
     admin: UserInToken = Depends(get_current_admin_user),
@@ -325,3 +343,6 @@ async def admin_summary(
     except Exception as e:
         logger.error("Error generating admin summary", error=str(e), admin_id=admin.id)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=ERROR_MESSAGES["internal_error"]) from e
+
+# Include the booking router
+app.include_router(booking_router)

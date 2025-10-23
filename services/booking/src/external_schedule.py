@@ -5,6 +5,7 @@ import httpx
 import structlog
 from typing import Union, Optional
 from .service_auth import service_token_manager
+from .config import settings
 
 logger = structlog.get_logger()
 
@@ -14,9 +15,9 @@ async def get_class_template_by_id(class_id: str) -> Union[dict, None]:
         # Get service token
         service_token = await service_token_manager.get_service_token()
         
-        async with httpx.AsyncClient(timeout=15.0) as client:  # Увеличиваем таймаут до 15 секунд
+        async with httpx.AsyncClient(timeout=15.0) as client: 
             headers = {"Authorization": f"Bearer {service_token}"}
-            resp = await client.get(f"http://schedule-service:8000/schedule/{class_id}", headers=headers)
+            resp = await client.get(f"{settings.schedule_service_url}/api/schedule/schedule/{class_id}", headers=headers)
             
             if resp.status_code == 200:
                 try:
@@ -32,6 +33,7 @@ async def get_class_template_by_id(class_id: str) -> Union[dict, None]:
                 logger.error("Unexpected status code from schedule service", 
                            class_id=class_id, status_code=resp.status_code, response_text=resp.text[:200])
                 return None
+                
     except httpx.TimeoutException:
         logger.error("Timeout when calling schedule service", class_id=class_id)
         return None
@@ -54,7 +56,7 @@ async def get_user_by_id(user_id: str) -> Union[dict, None]:
         
         async with httpx.AsyncClient(timeout=15.0) as client:
             headers = {"Authorization": f"Bearer {service_token}"}
-            resp = await client.get(f"http://auth-service:8000/auth/internal/users/{user_id}", headers=headers)
+            resp = await client.get(f"{settings.auth_service_url}/api/auth/internal/users/{user_id}", headers=headers)
             
             if resp.status_code == 200:
                 try:
@@ -70,6 +72,7 @@ async def get_user_by_id(user_id: str) -> Union[dict, None]:
                 logger.error("Unexpected status code from auth service", 
                            user_id=user_id, status_code=resp.status_code, response_text=resp.text[:200])
                 return None
+                
     except httpx.TimeoutException:
         logger.error("Timeout when calling auth service", user_id=user_id)
         return None
@@ -94,6 +97,8 @@ async def get_class_ids_by_filter(teacher: Optional[str] = None, name: Optional[
         logger.info("Service token obtained", token_length=len(service_token) if service_token else 0)
         
         async with httpx.AsyncClient(timeout=15.0) as client:
+            headers = {"Authorization": f"Bearer {service_token}"}
+            
             # Build query parameters
             params = {}
             if teacher:
@@ -101,12 +106,11 @@ async def get_class_ids_by_filter(teacher: Optional[str] = None, name: Optional[
             if name:
                 params['name'] = name
             
-            headers = {"Authorization": f"Bearer {service_token}"}
             logger.info("Making request to schedule service", 
-                       url="http://schedule-service:8000/schedule/ids",
+                       url=f"{settings.schedule_service_url}/api/schedule/schedule/ids",
                        params=params, headers_keys=list(headers.keys()))
             
-            resp = await client.get("http://schedule-service:8000/schedule/ids", params=params, headers=headers)
+            resp = await client.get(f"{settings.schedule_service_url}/api/schedule/schedule/ids", params=params, headers=headers)
             
             logger.info("Response received from schedule service", 
                        status_code=resp.status_code, 
@@ -125,6 +129,7 @@ async def get_class_ids_by_filter(teacher: Optional[str] = None, name: Optional[
                 logger.error("Unexpected status code from schedule service", 
                            status_code=resp.status_code, response_text=resp.text[:200])
                 return None
+                
     except httpx.TimeoutException:
         logger.error("Timeout when calling schedule service for class IDs")
         return None

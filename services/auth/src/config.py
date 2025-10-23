@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     
     # Security settings
     cors_origins: list[str] = Field(default=["http://localhost:3000"], alias="CORS_ORIGINS")
-    trusted_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="TRUSTED_HOSTS")
+    allowed_hosts: list[str] = Field(default=["localhost", "127.0.0.1"], alias="ALLOWED_HOSTS")
     
     # Rate limiting
     rate_limit_login: str = Field(default="5/minute", alias="RATE_LIMIT_LOGIN")
@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     # Service JWT configuration
     service_token_expire_minutes: int = Field(default=5, alias="SERVICE_TOKEN_EXPIRE_MINUTES")
     service_jwt_secret: str = Field(default="", alias="SERVICE_JWT_SECRET")
+    
+    # Admin user configuration
+    admin_email: str = Field(..., alias="ADMIN_EMAIL")
+    admin_password: str = Field(..., alias="ADMIN_PASSWORD")
+    auto_create_admin: bool = Field(default=True, alias="AUTO_CREATE_ADMIN")
     
     @field_validator('service_jwt_secret')
     @classmethod

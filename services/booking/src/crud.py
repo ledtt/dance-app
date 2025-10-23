@@ -284,6 +284,7 @@ async def get_all_bookings_with_summary(
             'date': booking.date.isoformat(),
             'start_time': booking.start_time.isoformat(),
             'created_at': booking.created_at.isoformat(),
+            'status': getattr(booking, 'status', 'active')  # Add status field with default
         }
         
         # Add class information
@@ -323,7 +324,7 @@ async def get_all_bookings_with_summary(
 
 
 async def cancel_booking(db: AsyncSession, booking_id: UUID, user_id: UUID) -> None:
-    """Cancel a booking for a specific user"""
+    """Cancel a booking for a specific user by changing status to cancelled"""
     result = await db.execute(
         select(Booking).where(
             and_(
@@ -337,7 +338,8 @@ async def cancel_booking(db: AsyncSession, booking_id: UUID, user_id: UUID) -> N
     if not booking:
         raise ResourceNotFoundError(ERROR_MESSAGES["booking_not_found"])
     
-    await db.delete(booking)
+    # Update status to cancelled instead of deleting
+    booking.status = 'cancelled'
     await db.commit()
 
 
@@ -492,7 +494,8 @@ async def _enrich_bookings(bookings: list[Booking]) -> list[dict]:
             'user_id': str(booking.user_id),
             'date': booking.date.isoformat(),
             'start_time': booking.start_time.isoformat(),
-            'created_at': booking.created_at.isoformat()
+            'created_at': booking.created_at.isoformat(),
+            'status': getattr(booking, 'status', 'active')  # Add status field with default
         }
         
         # Add class information
@@ -555,3 +558,43 @@ def _get_default_user(user_id: str) -> dict:
         'is_active': True,  # Add missing required field
         'created_at': datetime.datetime.now().isoformat()
     }
+
+
+async def update_booking_statuses(db: AsyncSession) -> None:
+    """Update booking statuses based on current time and class schedule"""
+    now = datetime.datetime.now()
+    
+    # Get all active bookings
+    result = await db.execute(
+        select(Booking).where(Booking.status == 'active')
+    )
+    active_bookings = result.scalars().all()
+    
+    updated_count = 0
+    for booking in active_bookings:
+        # Create datetime for class start time
+        class_datetime = datetime.datetime.combine(booking.date, datetime.time.min)
+        if booking.start_time:
+            # If start_time is a datetime, extract time part
+            if isinstance(booking.start_time, datetime.datetime):
+                class_datetime = datetime.datetime.combine(booking.date, booking.start_time.time())
+            else:
+                # If start_time is a time string, parse it
+                try:
+                    time_parts = str(booking.start_time).split(':')
+                    class_datetime = datetime.datetime.combine(
+                        booking.date, 
+                        datetime.time(int(time_parts[0]), int(time_parts[1]))
+                    )
+                except (ValueError, IndexError):
+                    # If parsing fails, use default time
+                    pass
+        
+        # If class is in the past and not cancelled, mark as completed
+        if class_datetime < now and booking.status != 'cancelled':
+            booking.status = 'completed'
+            updated_count += 1
+    
+    if updated_count > 0:
+        await db.commit()
+        logger.info(f"Updated {updated_count} booking statuses to completed")
