@@ -7,18 +7,26 @@ from datetime import date, datetime, time
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# Import the code to be tested
-from services.booking.src.crud import (
-    create_booking,
-    get_bookings_for_user,
-    get_all_bookings_with_summary,
-    _enrich_bookings,
-    cancel_booking,
-    get_booking_by_id
-)
-from services.booking.src.schemas import BookingCreate
-from services.booking.src.models import Booking
-from shared.exceptions import BookingError, ResourceNotFoundError, CapacityExceededError
+# Mock all database and external dependencies before importing
+with patch('services.booking.src.db.get_db'), \
+     patch('services.booking.src.db.engine'), \
+     patch('sqlalchemy.ext.asyncio.create_async_engine'), \
+     patch('sqlalchemy.ext.asyncio.async_sessionmaker'), \
+     patch('services.booking.src.external_schedule.get_class_template_by_id'), \
+     patch('services.booking.src.external_schedule.get_user_by_id'), \
+     patch('httpx.AsyncClient'):
+    
+    from services.booking.src.crud import (
+        create_booking,
+        get_bookings_for_user,
+        get_all_bookings_with_summary,
+        _enrich_bookings,
+        cancel_booking,
+        get_booking_by_id
+    )
+    from services.booking.src.schemas import BookingCreate
+    from services.booking.src.models import Booking
+    from shared.exceptions import BookingError, ResourceNotFoundError, CapacityExceededError
 
 # --- Fixtures ---
 
@@ -170,8 +178,8 @@ async def test_cancel_booking_success(mock_db: AsyncMock):
     booking_id = uuid4()
     user_id = uuid4()
     
-    # Arrange: Mock the database to return a booking to be deleted
-    mock_booking = Booking(id=booking_id, user_id=user_id)
+    # Arrange: Mock the database to return a booking to be cancelled
+    mock_booking = Booking(id=booking_id, user_id=user_id, status='active')
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_booking
     mock_db.execute.return_value = mock_result
@@ -180,7 +188,7 @@ async def test_cancel_booking_success(mock_db: AsyncMock):
     await cancel_booking(mock_db, booking_id, user_id)
     
     # Assert
-    mock_db.delete.assert_called_once_with(mock_booking)
+    assert mock_booking.status == 'cancelled'
     mock_db.commit.assert_awaited_once()
 
 @pytest.mark.asyncio

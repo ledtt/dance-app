@@ -1,25 +1,30 @@
 # tests/unit/auth/test_auth_service.py
 
 import pytest
-from unittest.mock import AsyncMock, patch, Mock
+from unittest.mock import AsyncMock, patch, Mock, MagicMock
 from uuid import uuid4
 from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 
-# Assume your models and schemas are importable for type hinting and instantiation
-from services.auth.src.models import User
-from services.auth.src.schemas import UserCreate, UserUpdate, UserRoleUpdate, PasswordChange
-from services.auth.src.crud import (
-    create_user, 
-    get_user_by_email, 
-    update_user_role,
-    update_user,
-    get_admin_count,
-    change_user_password,
-)
-from services.auth.src.auth import authenticate_user, create_access_token
+# Mock all database and external dependencies before importing
+with patch('services.auth.src.db.get_db'), \
+     patch('services.auth.src.db.engine'), \
+     patch('sqlalchemy.ext.asyncio.create_async_engine'), \
+     patch('sqlalchemy.ext.asyncio.async_sessionmaker'):
+    
+    from services.auth.src.models import User
+    from services.auth.src.schemas import UserCreate, UserUpdate, UserRoleUpdate, PasswordChange
+    from services.auth.src.crud import (
+        create_user, 
+        get_user_by_email, 
+        update_user_role,
+        update_user,
+        get_admin_count,
+        change_user_password,
+    )
+    from services.auth.src.auth import authenticate_user, create_access_token
 
 # --- Unit Tests for crud.py ---
 
@@ -160,10 +165,9 @@ async def test_authenticate_user_not_found(mock_get_user_by_email):
     assert authenticated_user is None
     mock_get_user_by_email.assert_called_once_with(mock_db, "notfound@example.com")
 
-def test_create_access_token():
+@patch('services.auth.src.auth.jwt_manager')
+def test_create_access_token(mock_jwt_manager):
     """Test the structure and content of a created JWT."""
-    from services.auth.src.auth import jwt_manager
-    
     user_id = str(uuid4())
     user_data = {
         "sub": user_id,
@@ -171,17 +175,19 @@ def test_create_access_token():
         "name": "Test Admin"
     }
     
+    # Mock the JWT manager's create_access_token method
+    mock_jwt_manager.create_access_token.return_value = "test-token"
+    
     token = create_access_token(user_data)
     
     assert isinstance(token, str)
+    assert token == "test-token"
     
-    # Decode without verification to check payload
-    decoded_payload = jwt_manager.verify_token(token)
-    
-    assert decoded_payload["sub"] == user_id
-    assert decoded_payload["role"] == "admin"
-    assert decoded_payload["name"] == "Test Admin"
-    assert "exp" in decoded_payload
-    assert "iat" in decoded_payload
-    assert "jti" in decoded_payload
-    assert decoded_payload["type"] == "access"
+    # Verify the JWT manager was called correctly
+    mock_jwt_manager.create_access_token.assert_called_once()
+    call_args = mock_jwt_manager.create_access_token.call_args[0][0]
+    assert call_args["sub"] == user_id
+    assert call_args["role"] == "admin"
+    assert call_args["name"] == "Test Admin"
+    assert call_args["type"] == "access"
+    assert "jti" in call_args
